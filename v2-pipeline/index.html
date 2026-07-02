@@ -5,20 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>V2 Orchestration Dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true, theme:'default', flowchart:{useMaxWidth:true,htmlLabels:true}});</script>
 <style>
 :root {
-  --bg: #0a0e14; --panel: #131820; --border: #1e2a3a; --text: #c8d6e5;
-  --dim: #5c6e85; --green: #00d68f; --yellow: #ffd93d; --red: #ff4757;
-  --blue: #54a0ff; --purple: #a55eea; --orange: #ff9f43;
+  --bg: #f5f6fa; --panel: #ffffff; --border: #d1d5db; --text: #1a1a2e;
+  --dim: #6b7280; --green: #10b981; --yellow: #eab308; --red: #ef4444;
+  --blue: #3b82f6; --purple: #8b5cf6; --orange: #f59e0b;
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { background: var(--bg); color: var(--text); font: 13px/1.5 'SF Mono', 'Menlo', monospace; }
-.header { background: var(--panel); border-bottom: 1px solid var(--border); padding: 12px 20px; display: flex; align-items: center; gap: 20px; }
-.header h1 { font-size: 16px; color: var(--green); letter-spacing: 2px; text-transform: uppercase; }
-.header .badge { background: var(--border); padding: 3px 10px; border-radius: 4px; font-size: 11px; }
-.header .badge.online { background: #0d3824; color: var(--green); }
+.header { background: var(--panel); border-bottom: 1px solid var(--border); padding: 12px 20px; display: flex; align-items: center; gap: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+.header h1 { font-size: 16px; color: var(--blue); letter-spacing: 2px; text-transform: uppercase; }
+.header .badge { background: #e5e7eb; padding: 3px 10px; border-radius: 4px; font-size: 11px; color: var(--dim); }
+.header .badge.online { background: #d1fae5; color: var(--green); }
 .grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; padding: 12px; }
-.panel { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 14px; }
+.panel { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
 .panel h2 { font-size: 12px; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
 .panel.full { grid-column: 1 / -1; }
 .panel.half { grid-column: span 2; }
@@ -31,7 +33,7 @@ body { background: var(--bg); color: var(--text); font: 13px/1.5 'SF Mono', 'Men
 .gauge .value.blue { color: var(--blue); }
 .gauge .value.red { color: var(--red); }
 .gauge .value.purple { color: var(--purple); }
-.progress-bar { height: 6px; background: var(--border); border-radius: 3px; margin: 4px 0; overflow: hidden; }
+.progress-bar { height: 6px; background: #e5e7eb; border-radius: 3px; margin: 4px 0; overflow: hidden; }
 .progress-bar .fill { height: 100%; border-radius: 3px; transition: width 0.5s; }
 .fill.green { background: var(--green); } .fill.yellow { background: var(--yellow); }
 .fill.red { background: var(--red); } .fill.blue { background: var(--blue); }
@@ -39,36 +41,38 @@ table { width: 100%; border-collapse: collapse; font-size: 11px; }
 th, td { padding: 5px 8px; text-align: left; border-bottom: 1px solid var(--border); }
 th { color: var(--dim); text-transform: uppercase; font-size: 10px; }
 td .tag { padding: 1px 6px; border-radius: 3px; font-size: 10px; }
-.tag.green { background: #0d3824; color: var(--green); }
-.tag.yellow { background: #3d3500; color: var(--yellow); }
-.tag.red { background: #3d0404; color: var(--red); }
-.tag.blue { background: #0d2240; color: var(--blue); }
+.tag.green { background: #d1fae5; color: var(--green); }
+.tag.yellow { background: #fef3c7; color: var(--yellow); }
+.tag.red { background: #fee2e2; color: var(--red); }
+.tag.blue { background: #dbeafe; color: var(--blue); }
 .chart-container { height: 200px; position: relative; }
 .chart-container.large { height: 300px; }
-input, select, textarea, button { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 6px 10px; border-radius: 4px; font: inherit; }
+input, select, textarea, button { background: #fff; border: 1px solid var(--border); color: var(--text); padding: 6px 10px; border-radius: 4px; font: inherit; }
 button { cursor: pointer; background: var(--blue); border-color: var(--blue); color: #fff; font-weight: bold; }
 button:hover { opacity: 0.85; }
 button.danger { background: var(--red); border-color: var(--red); }
-textarea { width: 100%; min-height: 300px; font-size: 11px; resize: vertical; }
+textarea { width: 100%; min-height: 300px; font-size: 11px; resize: vertical; background: #f9fafb; }
 .row { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; }
 .row label { min-width: 100px; color: var(--dim); font-size: 11px; }
 .row input[type="number"] { width: 80px; }
 .row input[type="text"] { flex: 1; }
 .refresh { font-size: 10px; color: var(--dim); }
 #sankey { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 8px 0; }
-#sankey .stage { background: var(--border); padding: 8px 14px; border-radius: 6px; text-align: center; min-width: 70px; }
+#sankey .stage { background: #f3f4f6; padding: 8px 14px; border-radius: 6px; text-align: center; min-width: 70px; border: 1px solid var(--border); }
 #sankey .stage .num { font-size: 18px; font-weight: bold; }
 #sankey .stage .lbl { font-size: 9px; color: var(--dim); }
 #sankey .arrow { color: var(--dim); font-size: 16px; }
-#sankey .stage.active { border: 1px solid var(--green); }
-#sankey .stage.warn { border: 1px solid var(--yellow); }
-#sankey .stage.bottleneck { border: 2px dashed var(--red); animation: pulse 2s infinite; }
+#sankey .stage.active { border: 1px solid var(--green); background: #d1fae5; }
+#sankey .stage.warn { border: 1px solid var(--yellow); background: #fef3c7; }
+#sankey .stage.bottleneck { border: 2px dashed var(--red); animation: pulse 2s infinite; background: #fee2e2; }
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
 .cron-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 11px; }
 .cron-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .cron-dot.ok { background: var(--green); }
 .cron-dot.error { background: var(--red); }
 .cron-dot.paused { background: var(--yellow); }
+#pipeline-flow { display: flex; justify-content: center; padding: 10px 0; }
+#pipeline-flow svg { max-width: 100%; height: auto; }
 </style>
 </head>
 <body>
@@ -82,6 +86,12 @@ textarea { width: 100%; min-height: 300px; font-size: 11px; resize: vertical; }
 </div>
 
 <div class="grid">
+  <!-- N8N / Node-RED Style Pipeline Flow -->
+  <div class="panel full">
+    <h2>🔀 V2 Orchestration Flow — n8n/Node-RED Style</h2>
+    <div class="mermaid" id="pipeline-flow"></div>
+  </div>
+
   <!-- Pipeline Sankey -->
   <div class="panel full">
     <h2>Pipeline Flow — Master.txt</h2>
@@ -212,6 +222,25 @@ function render(data) {
     if (i < stages.length - 1) sankey += '<div class="arrow">→</div>';
   });
   document.getElementById('sankey').innerHTML = sankey;
+
+  // n8n/Node-RED Style Pipeline Flow Diagram
+  const s = master.statuses || {};
+  const flowDef = `flowchart LR
+    A["🔍 Scanner<br/><b>${s.pending || 0} new</b>"]:::scanner --> B["📋 JD Fetcher<br/><b>${s.aligned || 0} aligned</b>"]:::fetcher
+    B --> C["🏷️ Tagger<br/><b>${s.working || 0} working</b>"]:::tagger
+    C --> D["📝 CV Generator<br/><b>${s.cv_done || 0} cv_done</b>"]:::cvgen
+    D --> E["🚀 Easy Apply<br/><b>${s.applied || 0} applied</b>"]:::apply
+    classDef scanner fill:#dbeafe,stroke:#3b82f6,color:#1e40af
+    classDef fetcher fill:#fef3c7,stroke:#eab308,color:#92400e
+    classDef tagger fill:#ede9fe,stroke:#8b5cf6,color:#5b21b6
+    classDef cvgen fill:#d1fae5,stroke:#10b981,color:#065f46
+    classDef apply fill:#fce7f3,stroke:#ec4899,color:#9d174d`;
+  (async () => {
+    try {
+      const {svg} = await mermaid.render('pipeline-flow-svg', flowDef);
+      document.getElementById('pipeline-flow').innerHTML = svg;
+    } catch(e) { document.getElementById('pipeline-flow').innerHTML = '<pre>'+flowDef+'</pre>'; }
+  })();
 
   // Production gauges
   const total = master.total || 0;
