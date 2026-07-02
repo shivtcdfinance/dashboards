@@ -85,6 +85,13 @@ td{padding:6px 8px;border-bottom:1px solid var(--border)}
 }
 .reload-btn:hover{background:#e5e7eb}
 
+.tag-btn{
+  background:#f3f4f6;border:1px solid var(--border);color:var(--dim);
+  padding:4px 12px;border-radius:16px;cursor:pointer;font-size:0.7rem;transition:all 0.15s
+}
+.tag-btn:hover{background:#e5e7eb;color:var(--text)}
+.tag-btn.active{background:var(--blue-bg);border-color:var(--blue);color:var(--blue);font-weight:600}
+
 .integration-panel{
   border:1px solid var(--border);border-radius:8px;overflow:hidden;
   background:var(--card);box-shadow:var(--shadow-sm)
@@ -132,32 +139,52 @@ td{padding:6px 8px;border-bottom:1px solid var(--border)}
   <div class="grid grid-4" style="margin-top:8px" id="kpiGrid"></div>
 </div>
 
-<!-- ===== ROW 1: Cron Activity + CV Gen ===== -->
+<!-- ===== ROW 1: Master.txt Tag Analysis + App Types ===== -->
+<div class="grid grid-2" style="margin-bottom:14px">
+  <div class="card">
+    <h3>Master.txt — Status Breakdown</h3>
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <button class="tag-btn active" data-tag="all" onclick="toggleTag('all')">All Jobs</button>
+      <button class="tag-btn" data-tag="v2" onclick="toggleTag('v2')">V2 Only</button>
+      <button class="tag-btn" data-tag="linkedin_ea" onclick="toggleTag('linkedin_ea')">LinkedIn EA</button>
+      <button class="tag-btn" data-tag="external" onclick="toggleTag('external')">External</button>
+    </div>
+    <canvas id="statusBreakdownChart" style="max-height:250px"></canvas>
+  </div>
+  <div class="card">
+    <h3>Tag Analysis</h3>
+    <div class="grid grid-3" style="margin-top:8px" id="tagKpiGrid"></div>
+    <div style="margin-top:12px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <span style="font-size:0.75rem;color:var(--dim)">Pipeline: v2</span>
+        <div style="flex:1;background:#e5e7eb;height:6px;border-radius:3px;overflow:hidden">
+          <div id="v2PctBar" style="height:100%;background:var(--green);border-radius:3px;width:0%;transition:width 0.3s"></div>
+        </div>
+        <span style="font-size:0.75rem;font-weight:600" id="v2PctLabel">0%</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ROW 2: Cron Activity + Step Timing ===== -->
 <div class="grid grid-2" style="margin-bottom:14px">
   <div class="card">
     <h3>Cron Activity</h3>
     <div id="cronList"></div>
   </div>
   <div class="card">
-    <h3>CV Gen Orchestrator</h3>
-    <div class="grid grid-3" style="margin-top:8px" id="cvGenGrid"></div>
-    <canvas id="cvGenChart" style="margin-top:10px;max-height:160px"></canvas>
-  </div>
-</div>
-
-<!-- ===== ROW 2: Step Timing + Pass/Fail ===== -->
-<div class="grid grid-2" style="margin-bottom:14px">
-  <div class="card">
     <h3>Step Timing Trend (Last 24h)</h3>
     <canvas id="stepTimingChart"></canvas>
   </div>
-  <div class="card">
-    <h3>Step Pass/Fail History</h3>
-    <canvas id="stepPassFailChart"></canvas>
-  </div>
 </div>
 
-<!-- ===== ROW 3: Failure Ledger ===== -->
+<!-- ===== ROW 3: Step Pass/Fail ===== -->
+<div class="card" style="margin-bottom:14px">
+  <h3>Step Pass/Fail History (Stacked — PASS=1, FAIL=0 per step)</h3>
+  <canvas id="stepPassFailChart"></canvas>
+</div>
+
+<!-- ===== ROW 4: Failure Ledger ===== -->
 <div class="card" style="margin-bottom:14px">
   <h3>Failure Ledger — Last 20 Orchestrator Runs</h3>
   <div style="overflow-x:auto">
@@ -598,7 +625,8 @@ async function loadData() {
 function renderAll(data) {
   renderKpis(data.latest);
   renderCrons(data.crons);
-  renderCvGen(data.latest, data.history);
+  renderTagAnalysis(data.latest);
+  renderStatusBreakdown(data.latest);
   renderStepTiming(data.history);
   renderStepPassFail(data.history);
   renderFailureLedger(data.history);
@@ -649,40 +677,119 @@ function renderCrons(crons) {
   }).join('');
 }
 
-// ═══════════════ CV GEN ═══════════════
-function renderCvGen(latest, history) {
+// ═══════════════ TAG ANALYSIS + STATUS BREAKDOWN ═══════════════
+var activeTag = 'all';
+
+function toggleTag(tag) {
+  activeTag = tag;
+  document.querySelectorAll('.tag-btn').forEach(function(b) {
+    b.classList.toggle('active', b.dataset.tag === tag);
+  });
+  var latest = window.__latestData;
+  if (latest) {
+    renderStatusBreakdown(latest);
+    renderTagKpis(latest);
+  }
+}
+
+function renderTagAnalysis(latest) {
   if (!latest) return;
-  document.getElementById('cvGenGrid').innerHTML =
-    '<div class="kpi"><div class="kpi-value hl-green">'+(latest.cv_fixed||0)+'</div>'+
-    '<div class="kpi-label">Fixed</div></div>'+
-    '<div class="kpi"><div class="kpi-value hl-blue">'+(latest.cv_generated||0)+'</div>'+
-    '<div class="kpi-label">Generated</div></div>'+
-    '<div class="kpi"><div class="kpi-value hl-purple">'+(latest.total_jobs||0)+'</div>'+
-    '<div class="kpi-label">Total Jobs</div></div>';
+  window.__latestData = latest;
+  renderTagKpis(latest);
+}
 
-  // CV fixed trend (last 24h)
-  if (!history || history.length < 2) return;
-  var labels = history.map(function(d) { var t=d.timestamp||''; return t.length>=16?t.substring(11,16):''; });
-  var cvFixed = history.map(function(d) { return parseInt(d.cv_fixed)||0; });
+function renderTagKpis(latest) {
+  var v2Total = parseInt(latest.v2_total) || 0;
+  var total = parseInt(latest.total_jobs) || 1;
+  var linkedinEa = parseInt(latest.apptype_linkedin_ea) || 0;
+  var external = parseInt(latest.apptype_external) || 0;
+  var expired = parseInt(latest.apptype_expired) || 0;
 
-  if (chartInstances.cvGen) chartInstances.cvGen.destroy();
-  var ctx = document.getElementById('cvGenChart');
-  chartInstances.cvGen = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: labels,
-      datasets: [{
-        label: 'CV Fixed', data: cvFixed,
-        borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.06)',
-        fill: true, tension: 0.2, pointRadius: 0, pointHoverRadius: 3, borderWidth: 1.5
-      }]
-    },
+  document.getElementById('tagKpiGrid').innerHTML =
+    '<div class="kpi"><div class="kpi-value hl-green">'+v2Total+'</div>'+
+    '<div class="kpi-label">V2 Tagged</div><div class="kpi-sub">'+(v2Total/total*100).toFixed(0)+'% of total</div></div>'+
+    '<div class="kpi"><div class="kpi-value hl-blue">'+linkedinEa+'</div>'+
+    '<div class="kpi-label">LinkedIn EA</div><div class="kpi-sub">easy apply jobs</div></div>'+
+    '<div class="kpi"><div class="kpi-value hl-purple">'+external+'</div>'+
+    '<div class="kpi-label">External</div><div class="kpi-sub">'+expired+' expired</div></div>';
+
+  // V2 progress bar
+  var pct = Math.min(100, Math.round(v2Total / total * 100));
+  document.getElementById('v2PctBar').style.width = pct + '%';
+  document.getElementById('v2PctLabel').textContent = pct + '% · ' + v2Total + ' jobs';
+}
+
+function renderStatusBreakdown(latest) {
+  if (!latest) return;
+  var isV2 = activeTag === 'v2';
+  var prefix = isV2 ? 'v2_' : '';
+
+  var stages = [
+    {k: 'pending', label: 'Pending', color: '#d97706'},
+    {k: 'aligned', label: 'Aligned', color: '#2563eb'},
+    {k: 'working', label: 'Working', color: '#7c3aed'},
+    {k: 'applied', label: 'Applied', color: '#059669'},
+    {k: 'blocked', label: 'Blocked', color: '#dc2626'},
+    {k: 'wasted', label: 'Wasted', color: '#6b7280'},
+    {k: 'not_aligned', label: 'Not Aligned', color: '#f59e0b'},
+  ];
+
+  var labels = stages.map(function(s) { return s.label; });
+  var allData = stages.map(function(s) { return parseInt(latest[s.k]) || 0; });
+  var prefixData = isV2 ? stages.map(function(s) { return parseInt(latest[prefix+s.k]) || 0; }) : null;
+
+  var datasets = [
+    {label: activeTag === 'all' ? 'All Jobs' : 'V2 Only',
+     data: isV2 ? prefixData : allData,
+     backgroundColor: stages.map(function(s) { return s.color + '99'; }),
+     borderColor: stages.map(function(s) { return s.color; }),
+     borderWidth: 1, borderRadius: 3}
+  ];
+
+  // If ALL tab, show V2 as an overlay for comparison
+  if (activeTag === 'all') {
+    var v2Data = stages.map(function(s) { return parseInt(latest['v2_'+s.k]) || 0; });
+    datasets.push({
+      label: 'V2 Tagged',
+      data: v2Data,
+      backgroundColor: 'rgba(5,150,105,0.3)',
+      borderColor: '#059669',
+      borderWidth: 1, borderDash: [3,2], borderRadius: 3, type: 'line',
+      pointRadius: 3, pointBackgroundColor: '#059669'
+    });
+  }
+
+  if (chartInstances.statusBreakdown) chartInstances.statusBreakdown.destroy();
+  var ctx = document.getElementById('statusBreakdownChart');
+  chartInstances.statusBreakdown = new Chart(ctx, {
+    type: 'bar',
+    data: { labels: labels, datasets: datasets },
     options: {
       responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
+      plugins: {
+        legend: { labels: { color: '#6b7280', boxWidth: 12, font: { size: 9 } } },
+        tooltip: {
+          callbacks: {
+            label: function(ctx) {
+              var val = ctx.raw;
+              var total = isV2 ? (parseInt(latest.v2_total) || 1) : (parseInt(latest.total_jobs) || 1);
+              return ctx.dataset.label + ': ' + val + ' (' + (val/total*100).toFixed(1) + '%)';
+            }
+          }
+        }
+      },
       scales: {
-        x: { ticks: { color: '#6b7280', maxTicksLimit: 8, font: { size: 8 } }, grid: { color: '#e5e7eb' } },
+        x: { ticks: { color: '#6b7280', font: { size: 9 } }, grid: { display: false } },
         y: { beginAtZero: true, ticks: { color: '#6b7280', font: { size: 9 } }, grid: { color: '#e5e7eb' } }
+      },
+      onClick: function(e, elements) {
+        if (elements.length > 0) {
+          var idx = elements[0].index;
+          var stage = stages[idx];
+          // Highlight the clicked stage — show ALL vs V2 for that stage
+          alert(stage.label + ': ' + (parseInt(latest[stage.k])||0) + ' (all) / '
+            + (parseInt(latest['v2_'+stage.k])||0) + ' (v2)');
+        }
       }
     }
   });
@@ -824,8 +931,8 @@ function checkService(port, name) {
 
 // Static data (embedded at generation time — no fetch needed)
 var STATIC_DATA = {
-  latest: {"timestamp": "2026-07-02T22:51:40.997201+00:00", "cdp_ok": "1", "pending": "217", "aligned": "3", "applied": "55", "blocked": "754", "wasted": "963", "not_aligned": "30", "working": "1", "scanner_ok": "0", "jd_ok": "1", "tagger_ok": "1", "sync_ok": "1", "wall_clock_s": "19", "cv_fixed": "404", "cv_generated": "0", "total_jobs": "2022", "backpressure_ratio": "72.33", "scanner_step_s": "0", "jd_step_s": "0", "tagger_step_s": "0", "sync_step_s": "0", "orchestrator_last_run": "2026-07-02 22:00:20 UTC"},
-  history: [{"timestamp": "2026-07-02T22:48:38.273513+00:00", "cdp_ok": "1", "pending": "217", "aligned": "3", "applied": "55", "blocked": "754", "wasted": "963", "not_aligned": "30", "working": "1", "scanner_ok": "0", "jd_ok": "1", "tagger_ok": "1", "sync_ok": "1", "wall_clock_s": "19", "cv_fixed": "404", "cv_generated": "0", "total_jobs": "2022", "backpressure_ratio": "72.33", "scanner_step_s": "0", "jd_step_s": "0", "tagger_step_s": "0", "sync_step_s": "0", "orchestrator_last_run": "2026-07-02 22:00:20 UTC"}, {"timestamp": "2026-07-02T22:48:45.711844+00:00", "cdp_ok": "1", "pending": "217", "aligned": "3", "applied": "55", "blocked": "754", "wasted": "963", "not_aligned": "30", "working": "1", "scanner_ok": "0", "jd_ok": "1", "tagger_ok": "1", "sync_ok": "1", "wall_clock_s": "19", "cv_fixed": "404", "cv_generated": "0", "total_jobs": "2022", "backpressure_ratio": "72.33", "scanner_step_s": "0", "jd_step_s": "0", "tagger_step_s": "0", "sync_step_s": "0", "orchestrator_last_run": "2026-07-02 22:00:20 UTC"}, {"timestamp": "2026-07-02T22:51:40.997201+00:00", "cdp_ok": "1", "pending": "217", "aligned": "3", "applied": "55", "blocked": "754", "wasted": "963", "not_aligned": "30", "working": "1", "scanner_ok": "0", "jd_ok": "1", "tagger_ok": "1", "sync_ok": "1", "wall_clock_s": "19", "cv_fixed": "404", "cv_generated": "0", "total_jobs": "2022", "backpressure_ratio": "72.33", "scanner_step_s": "0", "jd_step_s": "0", "tagger_step_s": "0", "sync_step_s": "0", "orchestrator_last_run": "2026-07-02 22:00:20 UTC"}],
+  latest: {"timestamp": "2026-07-02T23:00:09.505239+00:00", "cdp_ok": "1", "pending": "217", "aligned": "3", "applied": "55", "blocked": "754", "wasted": "963", "not_aligned": "30", "working": "0", "v2_pending": "217", "v2_aligned": "3", "v2_applied": "55", "v2_blocked": "754", "v2_wasted": "963", "v2_not_aligned": "30", "v2_working": "0", "v2_total": "2022", "apptype_linkedin_ea": "655", "apptype_external": "1060", "apptype_expired": "307", "scanner_ok": "0", "jd_ok": "1", "tagger_ok": "1", "sync_ok": "1", "wall_clock_s": "19", "scanner_step_s": "0", "jd_step_s": "0", "tagger_step_s": "0", "sync_step_s": "0", "total_jobs": "2022", "backpressure_ratio": "72.33", "orchestrator_last_run": "2026-07-02 22:00:20 UTC"},
+  history: [{"timestamp": "2026-07-02T22:58:41.397308+00:00", "cdp_ok": "1", "pending": "217", "aligned": "3", "applied": "55", "blocked": "754", "wasted": "963", "not_aligned": "30", "working": "0", "v2_pending": "217", "v2_aligned": "3", "v2_applied": "55", "v2_blocked": "754", "v2_wasted": "963", "v2_not_aligned": "30", "v2_working": "0", "v2_total": "2022", "apptype_linkedin_ea": "655", "apptype_external": "1060", "apptype_expired": "307", "scanner_ok": "0", "jd_ok": "1", "tagger_ok": "1", "sync_ok": "1", "wall_clock_s": "19", "scanner_step_s": "0", "jd_step_s": "0", "tagger_step_s": "0", "sync_step_s": "0", "total_jobs": "2022", "backpressure_ratio": "72.33", "orchestrator_last_run": "2026-07-02 22:00:20 UTC"}, {"timestamp": "2026-07-02T23:00:09.505239+00:00", "cdp_ok": "1", "pending": "217", "aligned": "3", "applied": "55", "blocked": "754", "wasted": "963", "not_aligned": "30", "working": "0", "v2_pending": "217", "v2_aligned": "3", "v2_applied": "55", "v2_blocked": "754", "v2_wasted": "963", "v2_not_aligned": "30", "v2_working": "0", "v2_total": "2022", "apptype_linkedin_ea": "655", "apptype_external": "1060", "apptype_expired": "307", "scanner_ok": "0", "jd_ok": "1", "tagger_ok": "1", "sync_ok": "1", "wall_clock_s": "19", "scanner_step_s": "0", "jd_step_s": "0", "tagger_step_s": "0", "sync_step_s": "0", "total_jobs": "2022", "backpressure_ratio": "72.33", "orchestrator_last_run": "2026-07-02 22:00:20 UTC"}],
   crons: [{"id": "c5ff04b374ef", "label": "\ud83e\uddea Pipeline Orchestrator", "icon": "\ud83e\uddea", "last_status": "unknown", "last_run_at": "", "enabled": false}, {"id": "44404c2ac9e3", "label": "\ud83d\udcdd CV Gen Orchestrator", "icon": "\ud83d\udcdd", "last_status": "unknown", "last_run_at": "", "enabled": false}, {"id": "15d2fd4538b5", "label": "\ud83d\udcca Dashboard Sync", "icon": "\ud83d\udcca", "last_status": "unknown", "last_run_at": "", "enabled": false}, {"id": "46f9dda2a4ae", "label": "\ud83d\ude80 Stagehand Apply", "icon": "\ud83d\ude80", "last_status": "unknown", "last_run_at": "", "enabled": false}, {"id": "0882e3ef9417", "label": "\ud83d\udccb JD Fetcher", "icon": "\ud83d\udccb", "last_status": "unknown", "last_run_at": "", "enabled": false}]
 };
 renderAll(STATIC_DATA);
