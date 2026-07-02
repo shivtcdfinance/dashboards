@@ -3,604 +3,180 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>V2 Orchestration Dashboard</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-<script>mermaid.initialize({startOnLoad:true, theme:'default', flowchart:{useMaxWidth:true,htmlLabels:true}});</script>
+<title>V2 Orchestration Pipeline</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <style>
 :root {
-  --bg: #f5f6fa; --panel: #ffffff; --border: #d1d5db; --text: #1a1a2e;
-  --dim: #6b7280; --green: #10b981; --yellow: #eab308; --red: #ef4444;
-  --blue: #3b82f6; --purple: #8b5cf6; --orange: #f59e0b;
+  --bg: #f5f6fa;
+  --card: #ffffff;
+  --border: #d1d5db;
+  --text: #1a1a2e;
+  --dim: #6b7280;
+  --green: #059669;
+  --green-bg: #d1fae5;
+  --blue: #2563eb;
+  --blue-bg: #dbeafe;
+  --red: #dc2626;
+  --red-bg: #fee2e2;
+  --yellow: #d97706;
+  --yellow-bg: #fef3c7;
+  --purple: #7c3aed;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 1px 3px rgba(0,0,0,0.08);
 }
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { background: var(--bg); color: var(--text); font: 13px/1.5 'SF Mono', 'Menlo', monospace; }
-.header { background: var(--panel); border-bottom: 1px solid var(--border); padding: 12px 20px; display: flex; align-items: center; gap: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
-.header h1 { font-size: 16px; color: var(--blue); letter-spacing: 2px; text-transform: uppercase; }
-.header .badge { background: #e5e7eb; padding: 3px 10px; border-radius: 4px; font-size: 11px; color: var(--dim); }
-.header .badge.online { background: #d1fae5; color: var(--green); }
-.grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; padding: 12px; }
-.panel { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
-.panel h2 { font-size: 12px; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
-.panel.full { grid-column: 1 / -1; }
-.panel.half { grid-column: span 2; }
-.gauge-row { display: flex; gap: 16px; justify-content: space-around; }
-.gauge { text-align: center; }
-.gauge .value { font-size: 28px; font-weight: bold; }
-.gauge .label { font-size: 10px; color: var(--dim); text-transform: uppercase; }
-.gauge .value.green { color: var(--green); }
-.gauge .value.yellow { color: var(--yellow); }
-.gauge .value.blue { color: var(--blue); }
-.gauge .value.red { color: var(--red); }
-.gauge .value.purple { color: var(--purple); }
-.progress-bar { height: 6px; background: #e5e7eb; border-radius: 3px; margin: 4px 0; overflow: hidden; }
-.progress-bar .fill { height: 100%; border-radius: 3px; transition: width 0.5s; }
-.fill.green { background: var(--green); } .fill.yellow { background: var(--yellow); }
-.fill.red { background: var(--red); } .fill.blue { background: var(--blue); }
-table { width: 100%; border-collapse: collapse; font-size: 11px; }
-th, td { padding: 5px 8px; text-align: left; border-bottom: 1px solid var(--border); }
-th { color: var(--dim); text-transform: uppercase; font-size: 10px; }
-td .tag { padding: 1px 6px; border-radius: 3px; font-size: 10px; }
-.tag.green { background: #d1fae5; color: var(--green); }
-.tag.yellow { background: #fef3c7; color: var(--yellow); }
-.tag.red { background: #fee2e2; color: var(--red); }
-.tag.blue { background: #dbeafe; color: var(--blue); }
-.chart-container { height: 200px; position: relative; }
-.chart-container.large { height: 300px; }
-input, select, textarea, button { background: #fff; border: 1px solid var(--border); color: var(--text); padding: 6px 10px; border-radius: 4px; font: inherit; }
-button { cursor: pointer; background: var(--blue); border-color: var(--blue); color: #fff; font-weight: bold; }
-button:hover { opacity: 0.85; }
-button.danger { background: var(--red); border-color: var(--red); }
-textarea { width: 100%; min-height: 300px; font-size: 11px; resize: vertical; background: #f9fafb; }
-.row { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; }
-.row label { min-width: 100px; color: var(--dim); font-size: 11px; }
-.row input[type="number"] { width: 80px; }
-.row input[type="text"] { flex: 1; }
-.refresh { font-size: 10px; color: var(--dim); }
-#sankey { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 8px 0; }
-#sankey .stage { background: #f3f4f6; padding: 8px 14px; border-radius: 6px; text-align: center; min-width: 70px; border: 1px solid var(--border); }
-#sankey .stage .num { font-size: 18px; font-weight: bold; }
-#sankey .stage .lbl { font-size: 9px; color: var(--dim); }
-#sankey .arrow { color: var(--dim); font-size: 16px; }
-#sankey .stage.active { border: 1px solid var(--green); background: #d1fae5; }
-#sankey .stage.warn { border: 1px solid var(--yellow); background: #fef3c7; }
-#sankey .stage.bottleneck { border: 2px dashed var(--red); animation: pulse 2s infinite; background: #fee2e2; }
-@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
-.cron-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 11px; }
-.cron-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.cron-dot.ok { background: var(--green); }
-.cron-dot.error { background: var(--red); }
-.cron-dot.paused { background: var(--yellow); }
-#pipeline-flow { display: flex; justify-content: center; padding: 10px 0; }
-#pipeline-flow svg { max-width: 100%; height: auto; }
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  background:var(--bg);color:var(--text);padding:24px;line-height:1.5
+}
+h1{font-size:1.3rem;font-weight:700;display:inline}
+.subtitle{color:var(--dim);font-size:0.8rem}
+.last-updated{color:var(--purple);font-size:0.75rem;margin-bottom:20px}
+
+.grid{display:grid;gap:14px;margin-bottom:14px}
+.grid-2{grid-template-columns:1fr 1fr}
+.grid-3{grid-template-columns:1fr 1fr 1fr}
+.grid-4{grid-template-columns:1fr 1fr 1fr 1fr}
+
+.card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:8px;padding:16px;box-shadow:var(--shadow-sm)
+}
+.card h3{
+  font-size:0.75rem;text-transform:uppercase;color:var(--dim);
+  letter-spacing:0.5px;margin-bottom:10px
+}
+.card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.card-header h3{margin-bottom:0}
+
+.kpi{text-align:center}
+.kpi-value{font-size:1.8rem;font-weight:700}
+.kpi-label{font-size:0.7rem;color:var(--dim);text-transform:uppercase;margin-top:2px}
+.kpi-sub{font-size:0.65rem;color:var(--dim)}
+
+canvas{max-height:220px;width:100%!important}
+
+table{width:100%;border-collapse:collapse;font-size:0.8rem}
+th{text-align:left;color:var(--dim);font-weight:500;padding:6px 8px;border-bottom:1px solid var(--border)}
+td{padding:6px 8px;border-bottom:1px solid var(--border)}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+
+.hl-green{color:var(--green);font-weight:600}
+.hl-red{color:var(--red);font-weight:600}
+.hl-blue{color:var(--blue);font-weight:600}
+.hl-yellow{color:var(--yellow);font-weight:600}
+.hl-purple{color:var(--purple);font-weight:600}
+
+.cron-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:0.8rem
+}
+.cron-row:last-child{border-bottom:none}
+.cron-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:8px}
+.cron-dot.ok{background:var(--green)}
+.cron-dot.fail{background:var(--red)}
+.cron-dot.unknown{background:var(--dim)}
+.cron-name{font-weight:500}
+.cron-time{color:var(--dim);font-size:0.7rem}
+
+.reload-btn{
+  background:#f3f4f6;border:1px solid var(--border);color:var(--text);
+  padding:6px 14px;border-radius:6px;cursor:pointer;font-size:0.75rem
+}
+.reload-btn:hover{background:#e5e7eb}
+
+.integration-panel{
+  border:1px solid var(--border);border-radius:8px;overflow:hidden;
+  background:var(--card);box-shadow:var(--shadow-sm)
+}
+.integration-panel .panel-header{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:10px 16px;background:#f9fafb;border-bottom:1px solid var(--border)
+}
+.integration-panel .panel-header h3{margin:0;text-transform:none;font-size:0.85rem}
+.integration-panel .panel-header a{font-size:0.7rem;color:var(--blue);text-decoration:none}
+.integration-panel iframe{width:100%;height:360px;border:none;display:block}
+.integration-panel .not-running{
+  padding:30px;text-align:center;color:var(--dim);font-size:0.85rem
+}
+.integration-panel details{margin:0;border-top:1px solid var(--border)}
+.integration-panel summary{
+  padding:8px 16px;font-size:0.7rem;cursor:pointer;color:var(--dim);background:#fafafa
+}
+.integration-panel pre{
+  padding:12px 16px;font-size:0.65rem;overflow-x:auto;
+  max-height:300px;background:#fafafa;margin:0;white-space:pre-wrap
+}
+
+@media(max-width:768px){
+  .grid-2{grid-template-columns:1fr}
+  .grid-3{grid-template-columns:1fr 1fr}
+  .grid-4{grid-template-columns:1fr 1fr}
+}
 </style>
 </head>
 <body>
-<div class="header">
-  <h1>⚙️ V2 Orchestration Pipeline</h1>
-  <span class="badge online">● LIVE · 5m · v2</span>
-  <span style="flex:1"></span>
-  <button id="collect-now" style="background:var(--purple);border-color:var(--purple);margin-right:10px">🔄 Collect Now</button>
-  <button id="export-sheets" style="background:var(--green);border-color:var(--green);margin-right:10px">📊 Export to Sheets</button>
-  <span class="refresh" id="refresh-time">Loading...</span>
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+  <div>
+    <h1>V2 Orchestration Pipeline</h1>
+    <span class="subtitle"> — Pipeline health &amp; step timing</span>
+    <div class="last-updated">Updated: <span id="update-time">—</span></div>
+  </div>
+  <button class="reload-btn" onclick="location.reload()">Refresh</button>
 </div>
 
-<div class="grid">
-  <!-- N8N / Node-RED Style Pipeline Flow -->
-  <div class="panel full">
-    <h2>🔀 V2 Orchestration Flow — n8n/Node-RED Style</h2>
-    <div class="mermaid" id="pipeline-flow"></div>
-  </div>
+<!-- ===== KPI CARDS ===== -->
+<div class="card" style="margin-bottom:14px">
+  <h3>Pipeline at a Glance</h3>
+  <div class="grid grid-4" style="margin-top:8px" id="kpiGrid"></div>
+</div>
 
-  <!-- Pipeline Sankey -->
-  <div class="panel full">
-    <h2>Pipeline Flow — Master.txt</h2>
-    <div id="sankey"></div>
+<!-- ===== ROW 1: Cron Activity + CV Gen ===== -->
+<div class="grid grid-2" style="margin-bottom:14px">
+  <div class="card">
+    <h3>Cron Activity</h3>
+    <div id="cronList"></div>
   </div>
-
-  <!-- Production Gauges -->
-  <div class="panel">
-    <h2>📊 Production Today</h2>
-    <div class="gauge-row" id="prod-gauges"></div>
-  </div>
-
-  <!-- Capacity -->
-  <div class="panel">
-    <h2>🏭 Capacity (Daily)</h2>
-    <div id="capacity-bars"></div>
-  </div>
-
-  <!-- Token Costs -->
-  <div class="panel">
-    <h2>💰 Token Cost (24h)</h2>
-    <div id="cost-metrics"></div>
-  </div>
-
-  <!-- Expected Production -->
-  <div class="panel">
-    <h2>🎯 Expected vs Actual</h2>
-    <div class="gauge-row" id="expected-gauges"></div>
-  </div>
-
-  <!-- n8n Integration — Visual Workflow -->
-  <div class="panel half">
-    <h2>⚡ n8n — V2 Pipeline Workflow</h2>
-    <div style="margin-bottom:8px">
-      <a href="https://kde-thickness-cast-polymer.trycloudflare.com" target="_blank" style="color:var(--blue);font-size:11px">↗ Open in n8n</a>
-      <span style="color:var(--dim);font-size:10px;margin-left:8px">workflow imported</span>
-    </div>
-    <canvas id="n8n-canvas" width="600" height="280" style="width:100%;height:auto;border:1px solid var(--border);border-radius:4px;background:#fafbfc"></canvas>
-    <details style="margin-top:8px">
-      <summary style="cursor:pointer;font-size:11px;color:var(--dim)">📄 Workflow JSON</summary>
-      <pre id="n8n-code" style="background:#f8fafc;padding:10px;border-radius:4px;font-size:10px;max-height:200px;overflow:auto;border:1px solid var(--border)">Loading...</pre>
-    </details>
-  </div>
-
-  <!-- Node-RED Integration — Visual Flow -->
-  <div class="panel half">
-    <h2>🔴 Node-RED — V2 Pipeline Flow</h2>
-    <div style="margin-bottom:8px">
-      <a href="https://mother-ocean-indicators-hey.trycloudflare.com" target="_blank" style="color:var(--red);font-size:11px">↗ Open in Node-RED</a>
-      <span style="color:var(--dim);font-size:10px;margin-left:8px">flow deployed</span>
-    </div>
-    <canvas id="nodered-canvas" width="600" height="280" style="width:100%;height:auto;border:1px solid var(--border);border-radius:4px;background:#fafbfc"></canvas>
-    <details style="margin-top:8px">
-      <summary style="cursor:pointer;font-size:11px;color:var(--dim)">📄 Flow JSON</summary>
-      <pre id="node-red-code" style="background:#f8fafc;padding:10px;border-radius:4px;font-size:10px;max-height:200px;overflow:auto;border:1px solid var(--border)">Loading...</pre>
-    </details>
-  </div>
-
-  <!-- Trend Chart -->
-  <div class="panel full">
-    <h2>📈 Throughput Trend (Last 24h) — Actual vs Expected</h2>
-    <div class="chart-container large"><canvas id="trend-chart"></canvas></div>
-  </div>
-
-  <!-- Cron Activity -->
-  <div class="panel half">
-    <h2>⏱️ Cron Activity</h2>
-    <div id="cron-activity"></div>
-  </div>
-
-  <!-- Rate Settings -->
-  <div class="panel half">
-    <h2>🔧 Rate Limits</h2>
-    <div id="rate-settings"></div>
-  </div>
-
-  <!-- Pipeline Stage Table -->
-  <div class="panel half">
-    <h2>📋 Master.txt Stages</h2>
-    <table id="stage-table">
-      <thead><tr><th>Stage</th><th>Count</th><th>CV</th><th>No CV</th></tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <!-- CV Database -->
-  <div class="panel half">
-    <h2>💾 CV Database</h2>
-    <div id="cv-stats"></div>
-  </div>
-
-  <!-- Notion History -->
-  <div class="panel full">
-    <h2>📊 Notion — 30-Day Trend (All-Time Data)</h2>
-    <div class="chart-container large"><canvas id="notion-chart"></canvas></div>
-  </div>
-
-  <!-- Notion Summary -->
-  <div class="panel half">
-    <h2>📋 Notion Summary</h2>
-    <div id="notion-summary"></div>
-  </div>
-
-  <!-- Recent Applied -->
-  <div class="panel half">
-    <h2>✅ Recently Applied</h2>
-    <div id="recent-applied"></div>
-  </div>
-
-  <!-- CV Database -->
-  <div class="panel half">
-    <h2>💾 CV Database</h2>
-    <div id="cv-stats"></div>
-  </div>
-
-  <!-- CSV Export -->
-  <div class="panel half">
-    <h2>📁 CSV Export</h2>
-    <div id="csv-stats"></div>
-  </div>
-
-  <!-- Master CV Editor -->
-  <div class="panel full">
-    <h2>📝 Master CV (shivansh_rao_master_profile.json)</h2>
-    <textarea id="profile-editor"></textarea>
-    <div class="row" style="margin-top:8px">
-      <button id="save-profile">💾 Save Profile</button>
-      <span id="profile-saved" style="color:var(--green);display:none">Saved ✓</span>
-    </div>
+  <div class="card">
+    <h3>CV Gen Orchestrator</h3>
+    <div class="grid grid-3" style="margin-top:8px" id="cvGenGrid"></div>
+    <canvas id="cvGenChart" style="margin-top:10px;max-height:160px"></canvas>
   </div>
 </div>
 
-<script>
-let charts = {};
+<!-- ===== ROW 2: Step Timing + Pass/Fail ===== -->
+<div class="grid grid-2" style="margin-bottom:14px">
+  <div class="card">
+    <h3>Step Timing Trend (Last 24h)</h3>
+    <canvas id="stepTimingChart"></canvas>
+  </div>
+  <div class="card">
+    <h3>Step Pass/Fail History</h3>
+    <canvas id="stepPassFailChart"></canvas>
+  </div>
+</div>
 
-function render(data) {
-  const m = data.metrics;
-  const master = m.master || {};
-  document.getElementById('refresh-time').textContent = 'Updated: ' + (m.timestamp || data.timestamp || '');
+<!-- ===== ROW 3: Failure Ledger ===== -->
+<div class="card" style="margin-bottom:14px">
+  <h3>Failure Ledger — Last 20 Orchestrator Runs</h3>
+  <div style="overflow-x:auto">
+    <table id="failureLedger"><tbody></tbody></table>
+  </div>
+</div>
 
-  // Sankey - use REAL master.txt stages
-  const stages = [
-    {k:'pending', label:'New', color:'dim'},
-    {k:'aligned', label:'Aligned', color:'blue'},
-    {k:'working', label:'Working', color:'yellow'},
-    {k:'cv_done', label:'CV Done', color:'green'},
-    {k:'applied', label:'Applied!', color:'green'},
-  ];
-  let sankey = '';
-  stages.forEach((s, i) => {
-    const count = master.statuses[s.k] || 0;
-    const active = count > 0 ? 'active' : '';
-    const isBottleneck = (s.k === 'cv_done' && count > 15) || (s.k === 'working' && count > 1);
-    const cls = [active, isBottleneck ? 'bottleneck' : ''].filter(Boolean).join(' ');
-    sankey += `<div class="stage ${cls}"><div class="num">${count}</div><div class="lbl">${s.label}</div></div>`;
-    if (i < stages.length - 1) sankey += '<div class="arrow">→</div>';
-  });
-  document.getElementById('sankey').innerHTML = sankey;
-
-  // n8n/Node-RED Style Pipeline Flow Diagram
-  const s = master.statuses || {};
-  const flowDef = `flowchart LR
-    A["🔍 Scanner<br/><b>${s.pending || 0} new</b>"]:::scanner --> B["📋 JD Fetcher<br/><b>${s.aligned || 0} aligned</b>"]:::fetcher
-    B --> C["🏷️ Tagger<br/><b>${s.working || 0} working</b>"]:::tagger
-    C --> D["📝 CV Generator<br/><b>${s.cv_done || 0} cv_done</b>"]:::cvgen
-    D --> E["🚀 Easy Apply<br/><b>${s.applied || 0} applied</b>"]:::apply
-    classDef scanner fill:#dbeafe,stroke:#3b82f6,color:#1e40af
-    classDef fetcher fill:#fef3c7,stroke:#eab308,color:#92400e
-    classDef tagger fill:#ede9fe,stroke:#8b5cf6,color:#5b21b6
-    classDef cvgen fill:#d1fae5,stroke:#10b981,color:#065f46
-    classDef apply fill:#fce7f3,stroke:#ec4899,color:#9d174d`;
-  (async () => {
-    try {
-      const {svg} = await mermaid.render('pipeline-flow-svg', flowDef);
-      document.getElementById('pipeline-flow').innerHTML = svg;
-    } catch(e) { document.getElementById('pipeline-flow').innerHTML = '<pre>'+flowDef+'</pre>'; }
-  })();
-
-  // Production gauges
-  const total = master.total || 0;
-  let todayTotal = 0;
-  Object.values(m.capacity).forEach(c => todayTotal += c.applied_today);
-  document.getElementById('prod-gauges').innerHTML = `
-    <div class="gauge"><div class="value green">${todayTotal}</div><div class="label">Applied Today</div></div>
-    <div class="gauge"><div class="value blue">${m.cvs_on_disk}</div><div class="label">CVs on Disk</div></div>
-    <div class="gauge"><div class="value yellow">${total}</div><div class="label">Pipeline Jobs</div></div>
-    <div class="gauge"><div class="value purple">$${m.cost_per_app.toFixed(3)}</div><div class="label">Cost/App</div></div>
-  `;
-
-  // Expected vs Actual
-  const exp = m.expected || {};
-  const cvDone = master.statuses['cv_done'] || 0;
-  const applied = master.statuses['applied'] || 0;
-  document.getElementById('expected-gauges').innerHTML = `
-    <div class="gauge"><div class="value green">${cvDone}</div><div class="label">CVs Ready</div>
-      <div style="font-size:9px;color:var(--dim)">target: ${exp.cv_per_hour}/hr</div></div>
-    <div class="gauge"><div class="value blue">${applied}</div><div class="label">Applied</div>
-      <div style="font-size:9px;color:var(--dim)">target: ${exp.ea_per_hour}/hr</div></div>
-    <div class="gauge"><div class="value yellow">${exp.daily_app_target || '?'}</div><div class="label">Daily Target</div></div>
-  `;
-
-  // Capacity bars
-  let capHtml = '';
-  Object.entries(m.capacity).forEach(([platform, cap]) => {
-    const pct = cap.utilization_pct;
-    const color = pct > 80 ? 'red' : pct > 50 ? 'yellow' : 'green';
-    capHtml += `<div style="margin-bottom:8px">
-      <div style="display:flex;justify-content:space-between;font-size:10px">
-        <span>${platform.replace('_',' ')}</span>
-        <span>${cap.applied_today}/${cap.daily_cap} (${pct}%)</span>
-      </div>
-      <div class="progress-bar"><div class="fill ${color}" style="width:${Math.min(pct,100)}%"></div></div>
-    </div>`;
-  });
-  document.getElementById('capacity-bars').innerHTML = capHtml || '<span style="color:var(--dim)">No data</span>';
-
-  // Cost metrics
-  let costHtml = `<div class="gauge"><div class="value yellow">$${m.total_cost.toFixed(3)}</div><div class="label">Total Cost (24h)</div></div>`;
-  costHtml += `<div class="gauge"><div class="value blue">$${m.cost_per_app.toFixed(4)}</div><div class="label">Per Application</div></div>`;
-  document.getElementById('cost-metrics').innerHTML = costHtml;
-
-  // Stage table
-  const stageOrder = ['pending','aligned','working','cv_done','applied','not_aligned','wasted','blocked'];
-  let tableHtml = '';
-  stageOrder.forEach(s => {
-    const count = master.statuses[s] || 0;
-    if (count === 0 && !['cv_done','applied','pending'].includes(s)) return;
-    const pct = total ? (count / total * 100).toFixed(1) : 0;
-    let tagCls = 'green';
-    if (s === 'not_aligned' || s === 'wasted') tagCls = 'red';
-    else if (s === 'working' || s === 'pending') tagCls = 'yellow';
-    tableHtml += `<tr>
-      <td>${s.replace('_',' ')}</td>
-      <td><span class="tag ${tagCls}">${count}</span></td>
-      <td>${pct}%</td>
-      <td>--</td>
-    </tr>`;
-  });
-  document.querySelector('#stage-table tbody').innerHTML = tableHtml;
-
-  // CV stats
-  document.getElementById('cv-stats').innerHTML = `
-    <div class="gauge-row">
-      <div class="gauge"><div class="value green">${m.cvs_on_disk}</div><div class="label">Total CVs</div></div>
-      <div class="gauge"><div class="value blue">${master.has_cv||0}</div><div class="label">With CV Path</div></div>
-      <div class="gauge"><div class="value red">${master.no_cv||0}</div><div class="label">Missing CV</div></div>
-    </div>`;
-
-  // CSV stats
-  const csvPath = m.csv_path || '~/.hermes/state/dashboard_snapshots.csv';
-  const snapCount = (m.history && m.history.snapshots) ? m.history.snapshots.length : 0;
-  document.getElementById('csv-stats').innerHTML = `
-    <div class="gauge-row">
-      <div class="gauge"><div class="value blue">${snapCount}</div><div class="label">Snapshots</div></div>
+<!-- ===== ROW 4: n8n + Node-RED ===== -->
+<div class="grid grid-2" style="margin-bottom:14px">
+  <div class="integration-panel" id="n8nPanel">
+    <div class="panel-header">
+      <h3>⚡ n8n — Live Workflow</h3>
+      <a href="http://localhost:5681" target="_blank">↗ Open Editor</a>
     </div>
-    <div style="margin-top:8px;font-size:10px;color:var(--dim)">
-      📄 ${csvPath}<br>
-      🔄 New row every 5 min<br>
-      📊 Columns: cv_done, applied, pending, cost...
-    </div>`;
-
-  // Notion — data comes from CSV (no separate API call)
-  const n = m.notion || {};
-  
-  // Notion summary gauges
-  document.getElementById('notion-summary').innerHTML = `
-    <div class="gauge-row">
-      <div class="gauge"><div class="value blue">${n.total||0}</div><div class="label">All-Time Entries</div></div>
-      <div class="gauge"><div class="value green">${n.applied||0}</div><div class="label">Total Applied</div></div>
-      <div class="gauge"><div class="value yellow">${n.cv_ready||0}</div><div class="label">CV Ready</div></div>
-      <div class="gauge"><div class="value red">${n.not_aligned||0}</div><div class="label">Not Aligned</div></div>
-    </div>
-    <div style="margin-top:10px;font-size:10px">
-      <div>Alignment: ${n.alignment_rate||0}% · CV:Apply: ${n.cv_apply_ratio||0}</div>
-      <div style="margin-top:4px;color:var(--dim)">
-        Wasted: ${n.wasted||0} · CSV rows: ${m.row_count||0}
-      </div>
-    </div>`;
-  
-  // Recent applied list
-  const recent = n.recent_applied || [];
-  let recentHtml = '<table><thead><tr><th>Job</th><th>Date</th></tr></thead><tbody>';
-  recent.forEach(r => {
-    recentHtml += `<tr><td>${r.name}</td><td>${r.date}</td></tr>`;
-  });
-  recentHtml += '</tbody></table>';
-  if (recent.length === 0) recentHtml = '<div style="color:var(--dim)">No applied jobs</div>';
-  document.getElementById('recent-applied').innerHTML = recentHtml;
-  
-  // Notion trend chart
-  const daily = n.daily_trend || [];
-  if (daily.length > 0 && charts.notion) charts.notion.destroy();
-  if (daily.length > 0) {
-    const ctx = document.getElementById('notion-chart').getContext('2d');
-    charts.notion = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: daily.map(d => d.date.slice(5)),
-        datasets: [
-          { label: 'Applied', data: daily.map(d => d.applied), backgroundColor: '#00d68f', borderRadius: 2 },
-          { label: 'CV Ready', data: daily.map(d => d.cv_ready), backgroundColor: '#ffd93d', borderRadius: 2 },
-          { label: 'Not Aligned', data: daily.map(d => d.not_aligned), backgroundColor: '#ff4757', borderRadius: 2 },
-        ]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { labels: { color: '#5c6e85', font: {size: 10} } } },
-        scales: {
-          y: { stacked: true, beginAtZero: true, grid: { color: '#1e2a3a' }, ticks: { color: '#5c6e85' } },
-          x: { stacked: true, grid: { display: false }, ticks: { color: '#5c6e85', font: {size: 8}, maxTicksLimit: 15 } }
-        }
-      }
-    });
-  }
-
-  // Rate settings
-  let rsHtml = '';
-  Object.entries(m.rate_limits).forEach(([platform, cfg]) => {
-    rsHtml += `<div class="row">
-      <label>${platform.replace('_',' ')}</label>
-      <input type="number" value="${cfg.daily_cap}" data-platform="${platform}" data-key="daily_cap" style="width:60px">/day
-      <input type="number" value="${cfg.per_run_cap}" data-platform="${platform}" data-key="per_run_cap" style="width:50px">/run
-    </div>`;
-  });
-  rsHtml += '<button id="save-limits">💾 Save Limits</button>';
-  document.getElementById('rate-settings').innerHTML = rsHtml;
-
-  // Cron activity
-  const crons = m.crons || {};
-  let cronHtml = '';
-  const cronOrder = ['Scanner','Tagger','JD Fetcher','CV Gen','Easy Apply'];
-  cronOrder.forEach(name => {
-    const c = crons[name] || {};
-    const status = c.last_status || '?';
-    const dot = status === 'ok' ? 'ok' : status === 'error' ? 'error' : 'paused';
-    const lastRun = (c.last_run || '').replace('T',' ').slice(0,16) || 'never';
-    const nextRun = (c.next_run || '').replace('T',' ').slice(0,16) || '?';
-    cronHtml += `<div class="cron-row">
-      <div class="cron-dot ${dot}"></div>
-      <span style="min-width:80px">${name}</span>
-      <span style="font-size:10px;color:var(--dim)">Last: ${lastRun}</span>
-      <span style="font-size:10px;color:var(--dim);margin-left:auto">Next: ${nextRun}</span>
-      <button class="fire-btn" data-cron="${name}" style="font-size:9px;padding:2px 8px;margin-left:4px">▶</button>
-    </div>`;
-  });
-  document.getElementById('cron-activity').innerHTML = cronHtml || '<span style="color:var(--dim)">No cron data</span>';
-
-  // Trend chart — actual values + expected dotted line
-  const history = m.history || {};
-  const snaps = history.snapshots || [];
-  if (snaps.length > 1) {
-    if (charts.trend) charts.trend.destroy();
-    const ctx = document.getElementById('trend-chart').getContext('2d');
-    const labels = snaps.map(s => {
-      const d = new Date(s.time);
-      return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
-    });
-    const cvData = snaps.map(s => s.cv_done || 0);
-    const appData = snaps.map(s => s.applied || 0);
-    const exp = m.expected || {};
-    const expCV = Array(snaps.length).fill(exp.cv_per_hour || 3);
-    const expApp = Array(snaps.length).fill(exp.ea_per_hour || 10);
-    
-    charts.trend = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: labels,
-        datasets: [
-          {
-            label: 'CV Done',
-            data: cvData,
-            borderColor: '#00d68f',
-            backgroundColor: 'transparent',
-            borderWidth: 2,
-            pointRadius: 1,
-            tension: 0.3,
-          },
-          {
-            label: 'Applied',
-            data: appData,
-            borderColor: '#54a0ff',
-            backgroundColor: 'transparent',
-            borderWidth: 2,
-            pointRadius: 1,
-            tension: 0.3,
-          },
-          {
-            label: 'Expected CV/hr',
-            data: expCV,
-            borderColor: '#00d68f',
-            borderDash: [5, 5],
-            borderWidth: 1,
-            pointRadius: 0,
-            fill: false,
-          },
-          {
-            label: 'Expected App/hr',
-            data: expApp,
-            borderColor: '#54a0ff',
-            borderDash: [5, 5],
-            borderWidth: 1,
-            pointRadius: 0,
-            fill: false,
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: false,
-        plugins: { legend: { labels: { color: '#5c6e85', font: { size: 10 } } } },
-        scales: {
-          y: { beginAtZero: true, grid: { color: '#1e2a3a' }, ticks: { color: '#5c6e85' } },
-          x: { grid: { display: false }, ticks: { color: '#5c6e85', font: { size: 9 }, maxTicksLimit: 12 } }
-        }
-      }
-    });
-  }
-
-  // Update the sankey bottleneck indicator
-  const cvDoneStage = document.querySelector('#sankey .stage:nth-child(13)'); // 4th stage = CV Done
-  if (cvDoneStage) {
-    const count = master.statuses['cv_done'] || 0;
-    if (count > 15) cvDoneStage.classList.add('bottleneck');
-  }
-}
-
-function loadProfile() {
-  fetch('/api/profile')
-    .then(r => r.json())
-    .then(d => document.getElementById('profile-editor').value = JSON.stringify(d, null, 2));
-}
-
-function refresh() {
-  fetch('/api/metrics')
-    .then(r => r.json())
-    .then(render)
-    .catch(() => document.getElementById('refresh-time').textContent = '⚠️ API error');
-}
-
-document.addEventListener('click', e => {
-  if (e.target.id === 'collect-now') {
-    e.target.textContent = '⏳ Started...';
-    e.target.disabled = true;
-    fetch('/api/collect', { method: 'POST' })
-      .then(r => r.json())
-      .then(d => {
-        e.target.textContent = '🔄 Collect Now';
-        e.target.disabled = false;
-        // Auto-refresh after 5s to pick up new data
-        setTimeout(refresh, 5000);
-      })
-      .catch(() => {
-        e.target.textContent = '🔄 Collect Now';
-        e.target.disabled = false;
-      });
-  }
-  if (e.target.id === 'export-sheets') {
-    e.target.textContent = '⏳ Syncing...';
-    e.target.disabled = true;
-    fetch('/api/export-sheets', {method:'POST'})
-      .then(r=>r.json())
-      .then(d=>{
-        e.target.textContent = d.ok ? '✅ Exported!' : '❌ Failed';
-        setTimeout(()=>{e.target.textContent='📊 Export to Sheets';e.target.disabled=false;},3000);
-      });
-  }
-  if (e.target.id === 'save-profile') {
-    try {
-      const data = JSON.parse(document.getElementById('profile-editor').value);
-      fetch('/api/profile', { method: 'POST', body: JSON.stringify(data) })
-        .then(r => r.json())
-        .then(() => {
-          document.getElementById('profile-saved').style.display = 'inline';
-          setTimeout(() => document.getElementById('profile-saved').style.display = 'none', 2000);
-        });
-    } catch(err) { alert('Invalid JSON: ' + err.message); }
-  }
-  if (e.target.id === 'save-limits') {
-    const limits = {};
-    document.querySelectorAll('#rate-settings input').forEach(inp => {
-      const platform = inp.dataset.platform;
-      const key = inp.dataset.key;
-      if (!limits[platform]) limits[platform] = {};
-      limits[platform][key] = parseInt(inp.value) || 0;
-    });
-    fetch('/api/limits', { method: 'POST', body: JSON.stringify(limits) })
-      .then(r => r.json())
-      .then(() => refresh());
-  }
-  if (e.target.classList.contains('fire-btn')) {
-    const cronName = e.target.dataset.cron;
-    e.target.textContent = '⏳';
-    e.target.disabled = true;
-    fetch('/api/fire-cron', { method: 'POST', body: JSON.stringify({cron: cronName}) })
-      .then(r => r.json())
-      .then(d => {
-        e.target.textContent = d.ok ? '✅' : '❌';
-        setTimeout(() => { e.target.textContent = '▶'; e.target.disabled = false; refresh(); }, 2000);
-      });
-  }
-});
-
-loadProfile();
-refresh();
-setInterval(refresh, 300000);  // every 5 min
-
-// Load n8n + Node-RED workflow JSON into code blocks
-const n8nJSON = {
+    <div class="not-running" id="n8nStatus">Checking n8n...</div>
+    <iframe id="n8nIframe" src="about:blank" style="display:none" sandbox="allow-scripts allow-same-origin"></iframe>
+    <details id="n8nDetails" style="display:none">
+      <summary>📄 Workflow JSON</summary>
+      <pre id="n8nJson">{
   "name": "V2 Job Application Pipeline",
   "nodes": [
     {
@@ -777,8 +353,19 @@ const n8nJSON = {
   "versionId": "v2.0",
   "id": "v2-job-pipeline",
   "active": false
-};
-const nrJSON = [
+}</pre>
+    </details>
+  </div>
+  <div class="integration-panel" id="nodeRedPanel">
+    <div class="panel-header">
+      <h3>🔴 Node-RED — Live Flow</h3>
+      <a href="http://localhost:1882" target="_blank">↗ Open Editor</a>
+    </div>
+    <div class="not-running" id="nodeRedStatus">Checking Node-RED...</div>
+    <iframe id="nodeRedIframe" src="about:blank" style="display:none" sandbox="allow-scripts allow-same-origin"></iframe>
+    <details id="nodeRedDetails" style="display:none">
+      <summary>📄 Flow JSON</summary>
+      <pre id="nodeRedJson">[
   {
     "id": "scanner-inject",
     "type": "inject",
@@ -988,87 +575,254 @@ const nrJSON = [
     "y": 200,
     "wires": []
   }
-];
-document.getElementById('n8n-code').textContent = n8nJSON;
-document.getElementById('node-red-code').textContent = nrJSON;
+]</pre>
+    </details>
+  </div>
+</div>
 
-// Render n8n workflow nodes on canvas
-function drawN8N() {
+<script>
+// ═══════════════ DATA FETCH ═══════════════
+var chartInstances = {};
+
+async function loadData() {
   try {
-    const wf = JSON.parse(n8nJSON);
-    const c = document.getElementById('n8n-canvas');
-    if (!c) return;
-    const ctx = c.getContext('2d');
-    const nodes = wf.nodes || [];
-    const colors = {scanner:'#dbeafe', jd:'#fef3c7', tagger:'#ede9fe', cv:'#d1fae5', apply:'#fce7f3'};
-    const strokes = {scanner:'#3b82f6', jd:'#eab308', tagger:'#8b5cf6', cv:'#10b981', apply:'#ec4899'};
-    const emoji = ['🔍','📋','🏷️','📝','🚀'];
-    const names = ['Scanner','JD Fetcher','Tagger','CV Gen','Easy Apply'];
-    const w = 100, h = 60, gap = 15, startX = 15, startY = 40;
-    ctx.clearRect(0,0,c.width,c.height);
-    // Draw connectors
-    ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 2;
-    nodes.slice(0,5).forEach((_,i) => {
-      if (i<4) {
-        ctx.beginPath();
-        ctx.moveTo(startX + i*(w+gap) + w, startY + h/2);
-        ctx.lineTo(startX + (i+1)*(w+gap), startY + h/2);
-        ctx.stroke();
-        // Arrow
-        const ax = startX + (i+1)*(w+gap) - 10;
-        ctx.fillStyle = '#94a3b8';
-        ctx.beginPath(); ctx.moveTo(ax, startY+h/2-5); ctx.lineTo(ax+8, startY+h/2); ctx.lineTo(ax, startY+h/2+5); ctx.fill();
-        ctx.fillStyle = '#cbd5e1';
+    var resp = await fetch('/data');
+    var json = await resp.json();
+    renderAll(json);
+  } catch(e) {
+    console.error('Data fetch error:', e);
+    document.getElementById('update-time').textContent = '⚠ Error loading data';
+  }
+}
+
+function renderAll(data) {
+  renderKpis(data.latest);
+  renderCrons(data.crons);
+  renderCvGen(data.latest, data.history);
+  renderStepTiming(data.history);
+  renderStepPassFail(data.history);
+  renderFailureLedger(data.history);
+  renderUpdateTime(data.latest);
+}
+
+// ═══════════════ UPDATE TIME ═══════════════
+function renderUpdateTime(latest) {
+  var ts = latest ? (latest.timestamp || latest.orchestrator_last_run || '—') : '—';
+  document.getElementById('update-time').textContent = ts;
+}
+
+// ═══════════════ KPIs ═══════════════
+function renderKpis(latest) {
+  if (!latest) return;
+  var bp = parseFloat(latest.backpressure_ratio || 0);
+  var bpClass = bp < 2 ? 'hl-green' : (bp <= 5 ? 'hl-yellow' : 'hl-red');
+  var cdpOk = parseInt(latest.cdp_ok || 0);
+  var cdpLabel = cdpOk ? '✅ Online' : '❌ Offline';
+  var cdpClass = cdpOk ? 'hl-green' : 'hl-red';
+
+  document.getElementById('kpiGrid').innerHTML =
+    '<div class="kpi"><div class="kpi-value '+bpClass+'">'+bp.toFixed(1)+'</div>'+
+    '<div class="kpi-label">Backpressure</div><div class="kpi-sub">pending ÷ aligned</div></div>'+
+    '<div class="kpi"><div class="kpi-value hl-blue">'+(latest.pending||0)+'</div>'+
+    '<div class="kpi-label">Pending</div><div class="kpi-sub">'+ (latest.aligned||0) +' aligned</div></div>'+
+    '<div class="kpi"><div class="kpi-value hl-purple">'+(latest.wall_clock_s||0)+'s</div>'+
+    '<div class="kpi-label">Wall Clock</div><div class="kpi-sub">orchestrator run</div></div>'+
+    '<div class="kpi"><div class="kpi-value '+cdpClass+'">'+cdpLabel+'</div>'+
+    '<div class="kpi-label">CDP Status</div><div class="kpi-sub">port 9222</div></div>';
+}
+
+// ═══════════════ CRON ACTIVITY ═══════════════
+function renderCrons(crons) {
+  if (!crons || crons.length === 0) {
+    document.getElementById('cronList').innerHTML =
+      '<div style="color:var(--dim);font-size:0.8rem;padding:12px 0;text-align:center">No cron data available</div>';
+    return;
+  }
+  document.getElementById('cronList').innerHTML = crons.map(function(c) {
+    var dot = c.last_status === 'ok' ? 'ok' : (c.last_status === 'error' ? 'fail' : 'unknown');
+    var last = c.last_run_at ? c.last_run_at.replace('T',' ').substring(0,16) : '--';
+    return '<div class="cron-row">'+
+      '<span><span class="cron-dot '+dot+'"></span>'+
+      '<span class="cron-name">'+c.icon+' '+c.label+'</span></span>'+
+      '<span class="cron-time">Last: '+last+' &nbsp;|&nbsp; '+
+      (c.enabled ? '🟢 Active' : '⏸ Paused')+'</span></div>';
+  }).join('');
+}
+
+// ═══════════════ CV GEN ═══════════════
+function renderCvGen(latest, history) {
+  if (!latest) return;
+  document.getElementById('cvGenGrid').innerHTML =
+    '<div class="kpi"><div class="kpi-value hl-green">'+(latest.cv_fixed||0)+'</div>'+
+    '<div class="kpi-label">Fixed</div></div>'+
+    '<div class="kpi"><div class="kpi-value hl-blue">'+(latest.cv_generated||0)+'</div>'+
+    '<div class="kpi-label">Generated</div></div>'+
+    '<div class="kpi"><div class="kpi-value hl-purple">'+(latest.total_jobs||0)+'</div>'+
+    '<div class="kpi-label">Total Jobs</div></div>';
+
+  // CV fixed trend (last 24h)
+  if (!history || history.length < 2) return;
+  var labels = history.map(function(d) { var t=d.timestamp||''; return t.length>=16?t.substring(11,16):''; });
+  var cvFixed = history.map(function(d) { return parseInt(d.cv_fixed)||0; });
+
+  if (chartInstances.cvGen) chartInstances.cvGen.destroy();
+  var ctx = document.getElementById('cvGenChart');
+  chartInstances.cvGen = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'CV Fixed', data: cvFixed,
+        borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.06)',
+        fill: true, tension: 0.2, pointRadius: 0, pointHoverRadius: 3, borderWidth: 1.5
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#6b7280', maxTicksLimit: 8, font: { size: 8 } }, grid: { color: '#e5e7eb' } },
+        y: { beginAtZero: true, ticks: { color: '#6b7280', font: { size: 9 } }, grid: { color: '#e5e7eb' } }
       }
-    });
-    // Draw nodes
-    nodes.slice(0,5).forEach((n,i) => {
-      const type = Object.keys(colors)[i] || 'scanner';
-      const x = startX + i*(w+gap);
-      ctx.fillStyle = colors[type]; ctx.strokeStyle = strokes[type]; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.roundRect(x, startY, w, h, 8); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = strokes[type]; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center';
-      ctx.fillText(emoji[i]+' '+names[i], x+w/2, startY+22);
-      ctx.font = '9px sans-serif'; ctx.fillStyle = '#64748b';
-      ctx.fillText('Step '+(i+1)+' of 5', x+w/2, startY+42);
-    });
-  } catch(e) { console.log('n8n render error:', e); }
+    }
+  });
 }
 
-// Render Node-RED flow nodes on canvas
-function drawNodeRED() {
-  try {
-    const flow = JSON.parse(nrJSON);
-    const c = document.getElementById('nodered-canvas');
-    if (!c) return;
-    const ctx = c.getContext('2d');
-    const nodes = Array.isArray(flow) ? flow : [];
-    const colors = {inject:'#dbeafe', exec:'#fef3c7', change:'#ede9fe', function:'#d1fae5', debug:'#fce7f3'};
-    const strokes = {inject:'#3b82f6', exec:'#eab308', change:'#8b5cf6', function:'#10b981', debug:'#ec4899'};
-    const emoji = {inject:'🔍', exec:'📡', change:'➡️', function:'📊', debug:'📤'};
-    const w = 95, h = 50, gap = 8, startX = 10, startY = 20;
-    // Show first 10 nodes max
-    const shown = nodes.slice(0, 10);
-    const rows = Math.ceil(shown.length / 5);
-    ctx.clearRect(0,0,c.width,c.height);
-    shown.forEach((n,i) => {
-      const row = Math.floor(i/5), col = i%5;
-      const x = startX + col*(w+gap), y = startY + row*(h+10);
-      const type = n.type || 'exec';
-      ctx.fillStyle = colors[type] || '#f1f5f9'; ctx.strokeStyle = strokes[type] || '#94a3b8'; ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.roundRect(x, y, w, h, 6); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = strokes[type] || '#64748b'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
-      const icon = emoji[type] || '⚙️';
-      const label = (n.name || type).replace(' V2','').slice(0,14);
-      ctx.fillText(icon+' '+label, x+w/2, y+20);
-      ctx.font = '8px sans-serif'; ctx.fillStyle = '#94a3b8';
-      ctx.fillText(type, x+w/2, y+36);
-    });
-  } catch(e) { console.log('Node-RED render error:', e); }
+// ═══════════════ STEP TIMING CHART ═══════════════
+function renderStepTiming(history) {
+  if (!history || history.length < 2) return;
+  var labels = history.map(function(d) { var t=d.timestamp||''; return t.length>=16?t.substring(11,16):''; });
+  var scanSeries = history.map(function(d) { return parseInt(d.scanner_step_s)||0; });
+  var jdSeries = history.map(function(d) { return parseInt(d.jd_step_s)||0; });
+  var tagSeries = history.map(function(d) { return parseInt(d.tagger_step_s)||0; });
+  var syncSeries = history.map(function(d) { return parseInt(d.sync_step_s)||0; });
+
+  if (chartInstances.stepTiming) chartInstances.stepTiming.destroy();
+  var ctx = document.getElementById('stepTimingChart');
+  chartInstances.stepTiming = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        {label:'Scanner', data:scanSeries, borderColor:'#dc2626', borderWidth:1.5, tension:0.2, pointRadius:0, pointHoverRadius:3},
+        {label:'JD Fetcher', data:jdSeries, borderColor:'#2563eb', borderWidth:1.5, tension:0.2, pointRadius:0, pointHoverRadius:3},
+        {label:'Tagger', data:tagSeries, borderColor:'#d97706', borderWidth:1.5, tension:0.2, pointRadius:0, pointHoverRadius:3},
+        {label:'Sync', data:syncSeries, borderColor:'#059669', borderWidth:1.5, tension:0.2, pointRadius:0, pointHoverRadius:3}
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { labels: { color: '#6b7280', boxWidth: 12, font: { size: 9 } } } },
+      scales: {
+        x: { ticks: { color: '#6b7280', maxTicksLimit: 10, font: { size: 8 } }, grid: { color: '#e5e7eb' } },
+        y: { beginAtZero: true, title: { display: true, text: 'seconds', color: '#6b7280' },
+             ticks: { color: '#6b7280', font: { size: 9 } }, grid: { color: '#e5e7eb' } }
+      }
+    }
+  });
 }
 
-// Draw on load and after data refresh
-setTimeout(() => { drawN8N(); drawNodeRED(); }, 500);
+// ═══════════════ STEP PASS/FAIL CHART ═══════════════
+function renderStepPassFail(history) {
+  if (!history || history.length < 2) return;
+  var labels = history.map(function(d) { var t=d.timestamp||''; return t.length>=16?t.substring(11,16):''; });
+  var scanOk = history.map(function(d) { return parseInt(d.scanner_ok)||0; });
+  var jdOk = history.map(function(d) { return parseInt(d.jd_ok)||0; });
+  var tagOk = history.map(function(d) { return parseInt(d.tagger_ok)||0; });
+  var syncOk = history.map(function(d) { return parseInt(d.sync_ok)||0; });
+
+  if (chartInstances.stepPassFail) chartInstances.stepPassFail.destroy();
+  var ctx = document.getElementById('stepPassFailChart');
+  chartInstances.stepPassFail = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [
+        {label:'Scanner', data:scanOk, backgroundColor:'rgba(220,38,38,0.6)', borderRadius:2},
+        {label:'JD Fetcher', data:jdOk, backgroundColor:'rgba(37,99,235,0.6)', borderRadius:2},
+        {label:'Tagger', data:tagOk, backgroundColor:'rgba(217,119,6,0.6)', borderRadius:2},
+        {label:'Sync', data:syncOk, backgroundColor:'rgba(5,150,105,0.6)', borderRadius:2}
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#6b7280', boxWidth: 10, font: { size: 9 } } } },
+      scales: {
+        x: { stacked: true, ticks: { color: '#6b7280', maxTicksLimit: 10, font: { size: 8 } }, grid: { color: '#e5e7eb' } },
+        y: { stacked: true, beginAtZero: true, max: 4,
+             ticks: { color: '#6b7280', stepSize: 1, font: { size: 9 }, callback: function(v){return v===1?'PASS':v===0?'FAIL':'';}},
+             grid: { color: '#e5e7eb' } }
+      }
+    }
+  });
+}
+
+// ═══════════════ FAILURE LEDGER ═══════════════
+function renderFailureLedger(history) {
+  if (!history || history.length === 0) {
+    document.querySelector('#failureLedger tbody').innerHTML =
+      '<tr><td colspan="5" style="text-align:center;color:var(--dim)">No history yet</td></tr>';
+    return;
+  }
+  var rows = history.slice().reverse(); // newest first — no hard cap, show ALL
+  var html = '<tr><th>Time</th><th>Wall Clock</th><th class="num">Scanner</th>'+
+    '<th class="num">JD</th><th class="num">Tagger</th><th class="num">Sync</th>'+
+    '<th class="num">Backpressure</th><th class="num">CDP</th></tr>';
+  var passCount = 0, failCount = 0;
+  rows.forEach(function(r) {
+    var ts = (r.timestamp||'').replace('T',' ').substring(0,19);
+    var scn = parseInt(r.scanner_ok) ? '✅' : '<span class="hl-red">❌</span>';
+    var jd  = parseInt(r.jd_ok) ? '✅' : '<span class="hl-red">❌</span>';
+    var tag = parseInt(r.tagger_ok) ? '✅' : '<span class="hl-red">❌</span>';
+    var syn = parseInt(r.sync_ok) ? '✅' : '<span class="hl-red">❌</span>';
+    var cdp = parseInt(r.cdp_ok) ? '✅' : '<span class="hl-red">❌</span>';
+    var bp  = (parseFloat(r.backpressure_ratio)||0).toFixed(1);
+    var wall = (parseInt(r.wall_clock_s)||0)+'s';
+    var allPass = parseInt(r.scanner_ok)&&parseInt(r.jd_ok)&&parseInt(r.tagger_ok)&&parseInt(r.sync_ok);
+    if (allPass) passCount++; else failCount++;
+    html += '<tr><td style="color:var(--dim);font-size:0.75rem">'+ts+'</td>'+
+      '<td>'+wall+'</td><td class="num">'+scn+'</td><td class="num">'+jd+'</td>'+
+      '<td class="num">'+tag+'</td><td class="num">'+syn+'</td>'+
+      '<td class="num '+((bp>5)?'hl-red':(bp>2?'hl-yellow':'hl-green'))+'">'+bp+'</td>'+
+      '<td class="num">'+cdp+'</td></tr>';
+  });
+  document.querySelector('#failureLedger tbody').innerHTML = html;
+  if (failCount > 0) {
+    html = '<tr><td colspan="8" style="text-align:center;color:var(--dim);font-size:0.75rem;padding-top:8px">'+
+      '✅ '+passCount+' all-clear runs | ❌ '+failCount+' runs with failures</td></tr>';
+    document.querySelector('#failureLedger tbody').innerHTML += html;
+  }
+}
+
+// ═══════════════ N8N / NODE-RED INTEGRATION CHECK ═══════════════
+function checkIntegrations() {
+  checkService(5681, 'n8n');
+  checkService(1882, 'nodeRed');
+}
+
+function checkService(port, name) {
+  var statusEl = document.getElementById(name === 'n8n' ? 'n8nStatus' : 'nodeRedStatus');
+  var iframeEl = document.getElementById(name === 'n8n' ? 'n8nIframe' : 'nodeRedIframe');
+  var detailsEl = document.getElementById(name === 'n8n' ? 'n8nDetails' : 'nodeRedDetails');
+
+  fetch('http://localhost:' + port + '/', { mode: 'no-cors' })
+    .then(function() {
+      statusEl.style.display = 'none';
+      iframeEl.style.display = 'block';
+      iframeEl.src = 'http://localhost:' + port + '/';
+      if (detailsEl) detailsEl.style.display = 'block';
+    })
+    .catch(function() {
+      statusEl.textContent = '⚠ ' + name.toUpperCase() + ' not running on port ' + port;
+      statusEl.style.display = 'block';
+      iframeEl.style.display = 'none';
+    });
+}
+
+// ═══════════════ INIT ═══════════════
+loadData();
+checkIntegrations();
 </script>
 </body>
 </html>
