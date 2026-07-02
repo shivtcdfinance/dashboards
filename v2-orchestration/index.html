@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>V2 Orchestration Pipeline</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #f5f6fa;
+  --card: #ffffff;
+  --border: #d1d5db;
+  --text: #1a1a2e;
+  --dim: #6b7280;
+  --green: #059669;
+  --green-bg: #d1fae5;
+  --blue: #2563eb;
+  --blue-bg: #dbeafe;
+  --red: #dc2626;
+  --red-bg: #fee2e2;
+  --yellow: #d97706;
+  --yellow-bg: #fef3c7;
+  --purple: #7c3aed;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 1px 3px rgba(0,0,0,0.08);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  background:var(--bg);color:var(--text);padding:24px;line-height:1.5
+}
+h1{font-size:1.3rem;font-weight:700;display:inline}
+.subtitle{color:var(--dim);font-size:0.8rem}
+.last-updated{color:var(--purple);font-size:0.75rem;margin-bottom:20px}
+
+.grid{display:grid;gap:14px;margin-bottom:14px}
+.grid-2{grid-template-columns:1fr 1fr}
+.grid-3{grid-template-columns:1fr 1fr 1fr}
+.grid-4{grid-template-columns:1fr 1fr 1fr 1fr}
+
+.card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:8px;padding:16px;box-shadow:var(--shadow-sm)
+}
+.card h3{
+  font-size:0.75rem;text-transform:uppercase;color:var(--dim);
+  letter-spacing:0.5px;margin-bottom:10px
+}
+.card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.card-header h3{margin-bottom:0}
+
+.kpi{text-align:center}
+.kpi-value{font-size:1.8rem;font-weight:700}
+.kpi-label{font-size:0.7rem;color:var(--dim);text-transform:uppercase;margin-top:2px}
+.kpi-sub{font-size:0.65rem;color:var(--dim)}
+
+canvas{max-height:220px;width:100%!important}
+
+table{width:100%;border-collapse:collapse;font-size:0.8rem}
+th{text-align:left;color:var(--dim);font-weight:500;padding:6px 8px;border-bottom:1px solid var(--border)}
+td{padding:6px 8px;border-bottom:1px solid var(--border)}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+
+.hl-green{color:var(--green);font-weight:600}
+.hl-red{color:var(--red);font-weight:600}
+.hl-blue{color:var(--blue);font-weight:600}
+.hl-yellow{color:var(--yellow);font-weight:600}
+.hl-purple{color:var(--purple);font-weight:600}
+
+.cron-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:0.8rem
+}
+.cron-row:last-child{border-bottom:none}
+.cron-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:8px}
+.cron-dot.ok{background:var(--green)}
+.cron-dot.fail{background:var(--red)}
+.cron-dot.unknown{background:var(--dim)}
+.cron-name{font-weight:500}
+.cron-time{color:var(--dim);font-size:0.7rem}
+
+.reload-btn{
+  background:#f3f4f6;border:1px solid var(--border);color:var(--text);
+  padding:6px 14px;border-radius:6px;cursor:pointer;font-size:0.75rem
+}
+.reload-btn:hover{background:#e5e7eb}
+
+.integration-panel{
+  border:1px solid var(--border);border-radius:8px;overflow:hidden;
+  background:var(--card);box-shadow:var(--shadow-sm)
+}
+.integration-panel .panel-header{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:10px 16px;background:#f9fafb;border-bottom:1px solid var(--border)
+}
+.integration-panel .panel-header h3{margin:0;text-transform:none;font-size:0.85rem}
+.integration-panel .panel-header a{font-size:0.7rem;color:var(--blue);text-decoration:none}
+.integration-panel iframe{width:100%;height:360px;border:none;display:block}
+.integration-panel .not-running{
+  padding:30px;text-align:center;color:var(--dim);font-size:0.85rem
+}
+.integration-panel details{margin:0;border-top:1px solid var(--border)}
+.integration-panel summary{
+  padding:8px 16px;font-size:0.7rem;cursor:pointer;color:var(--dim);background:#fafafa
+}
+.integration-panel pre{
+  padding:12px 16px;font-size:0.65rem;overflow-x:auto;
+  max-height:300px;background:#fafafa;margin:0;white-space:pre-wrap
+}
+
+@media(max-width:768px){
+  .grid-2{grid-template-columns:1fr}
+  .grid-3{grid-template-columns:1fr 1fr}
+  .grid-4{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+  <div>
+    <h1>V2 Orchestration Pipeline</h1>
+    <span class="subtitle"> — Pipeline health &amp; step timing</span>
+    <div class="last-updated">Updated: <span id="update-time">—</span></div>
+  </div>
+  <button class="reload-btn" onclick="location.reload()">Refresh</button>
+</div>
+
+<!-- ===== KPI CARDS ===== -->
+<div class="card" style="margin-bottom:14px">
+  <h3>Pipeline at a Glance</h3>
+  <div class="grid grid-4" style="margin-top:8px" id="kpiGrid"></div>
+</div>
+
+<!-- ===== ROW 1: Cron Activity + CV Gen ===== -->
+<div class="grid grid-2" style="margin-bottom:14px">
+  <div class="card">
+    <h3>Cron Activity</h3>
+    <div id="cronList"></div>
+  </div>
+  <div class="card">
+    <h3>CV Gen Orchestrator</h3>
+    <div class="grid grid-3" style="margin-top:8px" id="cvGenGrid"></div>
+    <canvas id="cvGenChart" style="margin-top:10px;max-height:160px"></canvas>
+  </div>
+</div>
+
+<!-- ===== ROW 2: Step Timing + Pass/Fail ===== -->
+<div class="grid grid-2" style="margin-bottom:14px">
+  <div class="card">
+    <h3>Step Timing Trend (Last 24h)</h3>
+    <canvas id="stepTimingChart"></canvas>
+  </div>
+  <div class="card">
+    <h3>Step Pass/Fail History</h3>
+    <canvas id="stepPassFailChart"></canvas>
+  </div>
+</div>
+
+<!-- ===== ROW 3: Failure Ledger ===== -->
+<div class="card" style="margin-bottom:14px">
+  <h3>Failure Ledger — Last 20 Orchestrator Runs</h3>
+  <div style="overflow-x:auto">
+    <table id="failureLedger"><tbody></tbody></table>
+  </div>
+</div>
+
+<!-- ===== ROW 4: n8n + Node-RED ===== -->
+<div class="grid grid-2" style="margin-bottom:14px">
+  <div class="integration-panel" id="n8nPanel">
+    <div class="panel-header">
+      <h3>⚡ n8n — Live Workflow</h3>
+      <a href="http://localhost:5681" target="_blank">↗ Open Editor</a>
+    </div>
+    <div class="not-running" id="n8nStatus">Checking n8n...</div>
+    <iframe id="n8nIframe" src="about:blank" style="display:none" sandbox="allow-scripts allow-same-origin"></iframe>
+    <details id="n8nDetails" style="display:none">
+      <summary>📄 Workflow JSON</summary>
+      <pre id="n8nJson">{
+  "name": "V2 Job Application Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "scanner-trigger",
+      "name": "\ud83d\udd0d Scanner (Hourly)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "command": "python3 ~/Documents/Hermes/v2/pipelines/active/jobs/scripts/pipeline_orchestrator_v2.py --step=scanner"
+      },
+      "id": "scanner-exec",
+      "name": "\ud83d\udce1 Run Scanner",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        500,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "command": "python3 ~/Documents/Hermes/v2/pipelines/active/jobs/scripts/pipeline_orchestrator_v2.py --step=jd_fetcher"
+      },
+      "id": "jd-fetcher-exec",
+      "name": "\ud83d\udccb JD Fetcher",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        750,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "command": "python3 ~/Documents/Hermes/v2/pipelines/active/jobs/scripts/pipeline_orchestrator_v2.py --step=tagger"
+      },
+      "id": "tagger-exec",
+      "name": "\ud83c\udff7\ufe0f Tagger",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        1000,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "command": "python3 ~/Documents/Hermes/v2/pipelines/active/jobs/scripts/cv_gen_orchestrator_v2.py"
+      },
+      "id": "cv-gen-exec",
+      "name": "\ud83d\udcdd CV Generator",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        1250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "command": "python3 ~/Documents/Hermes/v2/pipelines/active/jobs/scripts/pipeline_orchestrator_v2.py --step=easy_apply"
+      },
+      "id": "easy-apply-exec",
+      "name": "\ud83d\ude80 Easy Apply",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        1500,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const stats = items[0]?.json || {};\nreturn [{\n  json: {\n    status: 'ok',\n    pipeline: 'v2',\n    stage: 'complete',\n    timestamp: new Date().toISOString(),\n    ...stats\n  }\n}];"
+      },
+      "id": "result-formatter",
+      "name": "\ud83d\udcca Format Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1750,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "\ud83d\udd0d Scanner (Hourly)": {
+      "main": [
+        [
+          {
+            "node": "\ud83d\udce1 Run Scanner",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\ud83d\udce1 Run Scanner": {
+      "main": [
+        [
+          {
+            "node": "\ud83d\udccb JD Fetcher",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\ud83d\udccb JD Fetcher": {
+      "main": [
+        [
+          {
+            "node": "\ud83c\udff7\ufe0f Tagger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\ud83c\udff7\ufe0f Tagger": {
+      "main": [
+        [
+          {
+            "node": "\ud83d\udcdd CV Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\ud83d\udcdd CV Generator": {
+      "main": [
+        [
+          {
+            "node": "\ud83d\ude80 Easy Apply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\ud83d\ude80 Easy Apply": {
+      "main": [
+        [
+          {
+            "node": "\ud83d\udcca Format Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "v2.0",
+  "id": "v2-job-pipeline",
+  "active": false
+}</pre>
+    </details>
+  </div>
+  <div class="integration-panel" id="nodeRedPanel">
+    <div class="panel-header">
+      <h3>🔴 Node-RED — Live Flow</h3>
+      <a href="http://localhost:1882" target="_blank">↗ Open Editor</a>
+    </div>
+    <div class="not-running" id="nodeRedStatus">Checking Node-RED...</div>
+    <iframe id="nodeRedIframe" src="about:blank" style="display:none" sandbox="allow-scripts allow-same-origin"></iframe>
+    <details id="nodeRedDetails" style="display:none">
+      <summary>📄 Flow JSON</summary>
+      <pre id="nodeRedJson">[
+  {
+    "id": "scanner-inject",
+    "type": "inject",
+    "name": "\ud83d\udd0d Scanner Trigger (Hourly)",
+    "props": [
+      {
+        "p": "payload"
+      },
+      {
+        "p": "topic",
+        "vt": "str"
+      }
+    ],
+    "repeat": "3600",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "v2/pipeline/scanner",
+    "payload": "start",
+    "payloadType": "str",
+    "x": 150,
+    "y": 200,
+    "wires": [
+      [
+        "scanner-exec"
+      ]
+    ]
+  },
+  {
+    "id": "scanner-exec",
+    "type": "exec",
+    "command": "python3 ~/Documents/Hermes/v2/pipelines/active/jobs/scripts/pipeline_orchestrator_v2.py --step=scanner",
+    "addpay": false,
+    "name": "\ud83d\udce1 Run Scanner",
+    "x": 400,
+    "y": 200,
+    "wires": [
+      [
+        "jd-fetcher-inject"
+      ]
+    ]
+  },
+  {
+    "id": "jd-fetcher-inject",
+    "type": "change",
+    "name": "\u27a1\ufe0f Trigger JD Fetcher",
+    "rules": [
+      {
+        "t": "set",
+        "p": "payload",
+        "pt": "msg",
+        "to": "start",
+        "tot": "str"
+      }
+    ],
+    "x": 650,
+    "y": 200,
+    "wires": [
+      [
+        "jd-fetcher-exec"
+      ]
+    ]
+  },
+  {
+    "id": "jd-fetcher-exec",
+    "type": "exec",
+    "command": "python3 ~/Documents/Hermes/v2/pipelines/active/jobs/scripts/pipeline_orchestrator_v2.py --step=jd_fetcher",
+    "addpay": false,
+    "name": "\ud83d\udccb JD Fetcher",
+    "x": 900,
+    "y": 200,
+    "wires": [
+      [
+        "tagger-inject"
+      ]
+    ]
+  },
+  {
+    "id": "tagger-inject",
+    "type": "change",
+    "name": "\u27a1\ufe0f Trigger Tagger",
+    "rules": [
+      {
+        "t": "set",
+        "p": "payload",
+        "pt": "msg",
+        "to": "start",
+        "tot": "str"
+      }
+    ],
+    "x": 1150,
+    "y": 200,
+    "wires": [
+      [
+        "tagger-exec"
+      ]
+    ]
+  },
+  {
+    "id": "tagger-exec",
+    "type": "exec",
+    "command": "python3 ~/Documents/Hermes/v2/pipelines/active/jobs/scripts/pipeline_orchestrator_v2.py --step=tagger",
+    "addpay": false,
+    "name": "\ud83c\udff7\ufe0f Tagger",
+    "x": 1400,
+    "y": 200,
+    "wires": [
+      [
+        "cv-gen-inject"
+      ]
+    ]
+  },
+  {
+    "id": "cv-gen-inject",
+    "type": "change",
+    "name": "\u27a1\ufe0f Trigger CV Gen",
+    "rules": [
+      {
+        "t": "set",
+        "p": "payload",
+        "pt": "msg",
+        "to": "start",
+        "tot": "str"
+      }
+    ],
+    "x": 1650,
+    "y": 200,
+    "wires": [
+      [
+        "cv-gen-exec"
+      ]
+    ]
+  },
+  {
+    "id": "cv-gen-exec",
+    "type": "exec",
+    "command": "python3 ~/Documents/Hermes/v2/pipelines/active/jobs/scripts/cv_gen_orchestrator_v2.py",
+    "addpay": false,
+    "name": "\ud83d\udcdd CV Generator",
+    "x": 1900,
+    "y": 200,
+    "wires": [
+      [
+        "apply-inject"
+      ]
+    ]
+  },
+  {
+    "id": "apply-inject",
+    "type": "change",
+    "name": "\u27a1\ufe0f Trigger Easy Apply",
+    "rules": [
+      {
+        "t": "set",
+        "p": "payload",
+        "pt": "msg",
+        "to": "start",
+        "tot": "str"
+      }
+    ],
+    "x": 2150,
+    "y": 200,
+    "wires": [
+      [
+        "easy-apply-exec"
+      ]
+    ]
+  },
+  {
+    "id": "easy-apply-exec",
+    "type": "exec",
+    "command": "python3 ~/Documents/Hermes/v2/pipelines/active/jobs/scripts/pipeline_orchestrator_v2.py --step=easy_apply",
+    "addpay": false,
+    "name": "\ud83d\ude80 Easy Apply",
+    "x": 2400,
+    "y": 200,
+    "wires": [
+      [
+        "result-format"
+      ]
+    ]
+  },
+  {
+    "id": "result-format",
+    "type": "function",
+    "name": "\ud83d\udcca Format Result",
+    "func": "const out = {\n  status: 'ok',\n  pipeline: 'v2',\n  stage: 'complete',\n  timestamp: new Date().toISOString(),\n  stdout: msg.payload || ''\n};\nmsg.payload = out;\nreturn msg;",
+    "outputs": 1,
+    "x": 2650,
+    "y": 200,
+    "wires": [
+      [
+        "debug-output"
+      ]
+    ]
+  },
+  {
+    "id": "debug-output",
+    "type": "debug",
+    "name": "\ud83d\udce4 Output",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": true,
+    "complete": "payload",
+    "x": 2900,
+    "y": 200,
+    "wires": []
+  }
+]</pre>
+    </details>
+  </div>
+</div>
+
+<script>
+// ═══════════════ DATA FETCH ═══════════════
+var chartInstances = {};
+
+async function loadData() {
+  try {
+    var resp = await fetch('/data');
+    var json = await resp.json();
+    renderAll(json);
+  } catch(e) {
+    console.error('Data fetch error:', e);
+    document.getElementById('update-time').textContent = '⚠ Error — using cached data'; renderAll(STATIC_DATA);
+  }
+}
+
+function renderAll(data) {
+  renderKpis(data.latest);
+  renderCrons(data.crons);
+  renderCvGen(data.latest, data.history);
+  renderStepTiming(data.history);
+  renderStepPassFail(data.history);
+  renderFailureLedger(data.history);
+  renderUpdateTime(data.latest);
+}
+
+// ═══════════════ UPDATE TIME ═══════════════
+function renderUpdateTime(latest) {
+  var ts = latest ? (latest.timestamp || latest.orchestrator_last_run || '—') : '—';
+  document.getElementById('update-time').textContent = ts;
+}
+
+// ═══════════════ KPIs ═══════════════
+function renderKpis(latest) {
+  if (!latest) return;
+  var bp = parseFloat(latest.backpressure_ratio || 0);
+  var bpClass = bp < 2 ? 'hl-green' : (bp <= 5 ? 'hl-yellow' : 'hl-red');
+  var cdpOk = parseInt(latest.cdp_ok || 0);
+  var cdpLabel = cdpOk ? '✅ Online' : '❌ Offline';
+  var cdpClass = cdpOk ? 'hl-green' : 'hl-red';
+
+  document.getElementById('kpiGrid').innerHTML =
+    '<div class="kpi"><div class="kpi-value '+bpClass+'">'+bp.toFixed(1)+'</div>'+
+    '<div class="kpi-label">Backpressure</div><div class="kpi-sub">pending ÷ aligned</div></div>'+
+    '<div class="kpi"><div class="kpi-value hl-blue">'+(latest.pending||0)+'</div>'+
+    '<div class="kpi-label">Pending</div><div class="kpi-sub">'+ (latest.aligned||0) +' aligned</div></div>'+
+    '<div class="kpi"><div class="kpi-value hl-purple">'+(latest.wall_clock_s||0)+'s</div>'+
+    '<div class="kpi-label">Wall Clock</div><div class="kpi-sub">orchestrator run</div></div>'+
+    '<div class="kpi"><div class="kpi-value '+cdpClass+'">'+cdpLabel+'</div>'+
+    '<div class="kpi-label">CDP Status</div><div class="kpi-sub">port 9222</div></div>';
+}
+
+// ═══════════════ CRON ACTIVITY ═══════════════
+function renderCrons(crons) {
+  if (!crons || crons.length === 0) {
+    document.getElementById('cronList').innerHTML =
+      '<div style="color:var(--dim);font-size:0.8rem;padding:12px 0;text-align:center">No cron data available</div>';
+    return;
+  }
+  document.getElementById('cronList').innerHTML = crons.map(function(c) {
+    var dot = c.last_status === 'ok' ? 'ok' : (c.last_status === 'error' ? 'fail' : 'unknown');
+    var last = c.last_run_at ? c.last_run_at.replace('T',' ').substring(0,16) : '--';
+    return '<div class="cron-row">'+
+      '<span><span class="cron-dot '+dot+'"></span>'+
+      '<span class="cron-name">'+c.icon+' '+c.label+'</span></span>'+
+      '<span class="cron-time">Last: '+last+' &nbsp;|&nbsp; '+
+      (c.enabled ? '🟢 Active' : '⏸ Paused')+'</span></div>';
+  }).join('');
+}
+
+// ═══════════════ CV GEN ═══════════════
+function renderCvGen(latest, history) {
+  if (!latest) return;
+  document.getElementById('cvGenGrid').innerHTML =
+    '<div class="kpi"><div class="kpi-value hl-green">'+(latest.cv_fixed||0)+'</div>'+
+    '<div class="kpi-label">Fixed</div></div>'+
+    '<div class="kpi"><div class="kpi-value hl-blue">'+(latest.cv_generated||0)+'</div>'+
+    '<div class="kpi-label">Generated</div></div>'+
+    '<div class="kpi"><div class="kpi-value hl-purple">'+(latest.total_jobs||0)+'</div>'+
+    '<div class="kpi-label">Total Jobs</div></div>';
+
+  // CV fixed trend (last 24h)
+  if (!history || history.length < 2) return;
+  var labels = history.map(function(d) { var t=d.timestamp||''; return t.length>=16?t.substring(11,16):''; });
+  var cvFixed = history.map(function(d) { return parseInt(d.cv_fixed)||0; });
+
+  if (chartInstances.cvGen) chartInstances.cvGen.destroy();
+  var ctx = document.getElementById('cvGenChart');
+  chartInstances.cvGen = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'CV Fixed', data: cvFixed,
+        borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.06)',
+        fill: true, tension: 0.2, pointRadius: 0, pointHoverRadius: 3, borderWidth: 1.5
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#6b7280', maxTicksLimit: 8, font: { size: 8 } }, grid: { color: '#e5e7eb' } },
+        y: { beginAtZero: true, ticks: { color: '#6b7280', font: { size: 9 } }, grid: { color: '#e5e7eb' } }
+      }
+    }
+  });
+}
+
+// ═══════════════ STEP TIMING CHART ═══════════════
+function renderStepTiming(history) {
+  if (!history || history.length < 2) return;
+  var labels = history.map(function(d) { var t=d.timestamp||''; return t.length>=16?t.substring(11,16):''; });
+  var scanSeries = history.map(function(d) { return parseInt(d.scanner_step_s)||0; });
+  var jdSeries = history.map(function(d) { return parseInt(d.jd_step_s)||0; });
+  var tagSeries = history.map(function(d) { return parseInt(d.tagger_step_s)||0; });
+  var syncSeries = history.map(function(d) { return parseInt(d.sync_step_s)||0; });
+
+  if (chartInstances.stepTiming) chartInstances.stepTiming.destroy();
+  var ctx = document.getElementById('stepTimingChart');
+  chartInstances.stepTiming = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        {label:'Scanner', data:scanSeries, borderColor:'#dc2626', borderWidth:1.5, tension:0.2, pointRadius:0, pointHoverRadius:3},
+        {label:'JD Fetcher', data:jdSeries, borderColor:'#2563eb', borderWidth:1.5, tension:0.2, pointRadius:0, pointHoverRadius:3},
+        {label:'Tagger', data:tagSeries, borderColor:'#d97706', borderWidth:1.5, tension:0.2, pointRadius:0, pointHoverRadius:3},
+        {label:'Sync', data:syncSeries, borderColor:'#059669', borderWidth:1.5, tension:0.2, pointRadius:0, pointHoverRadius:3}
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { labels: { color: '#6b7280', boxWidth: 12, font: { size: 9 } } } },
+      scales: {
+        x: { ticks: { color: '#6b7280', maxTicksLimit: 10, font: { size: 8 } }, grid: { color: '#e5e7eb' } },
+        y: { beginAtZero: true, title: { display: true, text: 'seconds', color: '#6b7280' },
+             ticks: { color: '#6b7280', font: { size: 9 } }, grid: { color: '#e5e7eb' } }
+      }
+    }
+  });
+}
+
+// ═══════════════ STEP PASS/FAIL CHART ═══════════════
+function renderStepPassFail(history) {
+  if (!history || history.length < 2) return;
+  var labels = history.map(function(d) { var t=d.timestamp||''; return t.length>=16?t.substring(11,16):''; });
+  var scanOk = history.map(function(d) { return parseInt(d.scanner_ok)||0; });
+  var jdOk = history.map(function(d) { return parseInt(d.jd_ok)||0; });
+  var tagOk = history.map(function(d) { return parseInt(d.tagger_ok)||0; });
+  var syncOk = history.map(function(d) { return parseInt(d.sync_ok)||0; });
+
+  if (chartInstances.stepPassFail) chartInstances.stepPassFail.destroy();
+  var ctx = document.getElementById('stepPassFailChart');
+  chartInstances.stepPassFail = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [
+        {label:'Scanner', data:scanOk, backgroundColor:'rgba(220,38,38,0.6)', borderRadius:2},
+        {label:'JD Fetcher', data:jdOk, backgroundColor:'rgba(37,99,235,0.6)', borderRadius:2},
+        {label:'Tagger', data:tagOk, backgroundColor:'rgba(217,119,6,0.6)', borderRadius:2},
+        {label:'Sync', data:syncOk, backgroundColor:'rgba(5,150,105,0.6)', borderRadius:2}
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#6b7280', boxWidth: 10, font: { size: 9 } } } },
+      scales: {
+        x: { stacked: true, ticks: { color: '#6b7280', maxTicksLimit: 10, font: { size: 8 } }, grid: { color: '#e5e7eb' } },
+        y: { stacked: true, beginAtZero: true, max: 4,
+             ticks: { color: '#6b7280', stepSize: 1, font: { size: 9 }, callback: function(v){return v===1?'PASS':v===0?'FAIL':'';}},
+             grid: { color: '#e5e7eb' } }
+      }
+    }
+  });
+}
+
+// ═══════════════ FAILURE LEDGER ═══════════════
+function renderFailureLedger(history) {
+  if (!history || history.length === 0) {
+    document.querySelector('#failureLedger tbody').innerHTML =
+      '<tr><td colspan="5" style="text-align:center;color:var(--dim)">No history yet</td></tr>';
+    return;
+  }
+  var rows = history.slice().reverse(); // newest first — no hard cap, show ALL
+  var html = '<tr><th>Time</th><th>Wall Clock</th><th class="num">Scanner</th>'+
+    '<th class="num">JD</th><th class="num">Tagger</th><th class="num">Sync</th>'+
+    '<th class="num">Backpressure</th><th class="num">CDP</th></tr>';
+  var passCount = 0, failCount = 0;
+  rows.forEach(function(r) {
+    var ts = (r.timestamp||'').replace('T',' ').substring(0,19);
+    var scn = parseInt(r.scanner_ok) ? '✅' : '<span class="hl-red">❌</span>';
+    var jd  = parseInt(r.jd_ok) ? '✅' : '<span class="hl-red">❌</span>';
+    var tag = parseInt(r.tagger_ok) ? '✅' : '<span class="hl-red">❌</span>';
+    var syn = parseInt(r.sync_ok) ? '✅' : '<span class="hl-red">❌</span>';
+    var cdp = parseInt(r.cdp_ok) ? '✅' : '<span class="hl-red">❌</span>';
+    var bp  = (parseFloat(r.backpressure_ratio)||0).toFixed(1);
+    var wall = (parseInt(r.wall_clock_s)||0)+'s';
+    var allPass = parseInt(r.scanner_ok)&&parseInt(r.jd_ok)&&parseInt(r.tagger_ok)&&parseInt(r.sync_ok);
+    if (allPass) passCount++; else failCount++;
+    html += '<tr><td style="color:var(--dim);font-size:0.75rem">'+ts+'</td>'+
+      '<td>'+wall+'</td><td class="num">'+scn+'</td><td class="num">'+jd+'</td>'+
+      '<td class="num">'+tag+'</td><td class="num">'+syn+'</td>'+
+      '<td class="num '+((bp>5)?'hl-red':(bp>2?'hl-yellow':'hl-green'))+'">'+bp+'</td>'+
+      '<td class="num">'+cdp+'</td></tr>';
+  });
+  document.querySelector('#failureLedger tbody').innerHTML = html;
+  if (failCount > 0) {
+    html = '<tr><td colspan="8" style="text-align:center;color:var(--dim);font-size:0.75rem;padding-top:8px">'+
+      '✅ '+passCount+' all-clear runs | ❌ '+failCount+' runs with failures</td></tr>';
+    document.querySelector('#failureLedger tbody').innerHTML += html;
+  }
+}
+
+// ═══════════════ N8N / NODE-RED INTEGRATION CHECK ═══════════════
+function checkIntegrations() {
+  checkService(5681, 'n8n');
+  checkService(1882, 'nodeRed');
+}
+
+function checkService(port, name) {
+  var statusEl = document.getElementById(name === 'n8n' ? 'n8nStatus' : 'nodeRedStatus');
+  var iframeEl = document.getElementById(name === 'n8n' ? 'n8nIframe' : 'nodeRedIframe');
+  var detailsEl = document.getElementById(name === 'n8n' ? 'n8nDetails' : 'nodeRedDetails');
+
+  fetch('http://localhost:' + port + '/', { mode: 'no-cors' })
+    .then(function() {
+      statusEl.style.display = 'none';
+      iframeEl.style.display = 'block';
+      iframeEl.src = 'http://localhost:' + port + '/';
+      if (detailsEl) detailsEl.style.display = 'block';
+    })
+    .catch(function() {
+      statusEl.textContent = '⚠ ' + name.toUpperCase() + ' not running on port ' + port;
+      statusEl.style.display = 'block';
+      iframeEl.style.display = 'none';
+    });
+}
+
+// ═══════════════ INIT ═══════════════
+
+// Static data (embedded at generation time — no fetch needed)
+var STATIC_DATA = {
+  latest: {"timestamp": "2026-07-02T22:51:40.997201+00:00", "cdp_ok": "1", "pending": "217", "aligned": "3", "applied": "55", "blocked": "754", "wasted": "963", "not_aligned": "30", "working": "1", "scanner_ok": "0", "jd_ok": "1", "tagger_ok": "1", "sync_ok": "1", "wall_clock_s": "19", "cv_fixed": "404", "cv_generated": "0", "total_jobs": "2022", "backpressure_ratio": "72.33", "scanner_step_s": "0", "jd_step_s": "0", "tagger_step_s": "0", "sync_step_s": "0", "orchestrator_last_run": "2026-07-02 22:00:20 UTC"},
+  history: [{"timestamp": "2026-07-02T22:48:38.273513+00:00", "cdp_ok": "1", "pending": "217", "aligned": "3", "applied": "55", "blocked": "754", "wasted": "963", "not_aligned": "30", "working": "1", "scanner_ok": "0", "jd_ok": "1", "tagger_ok": "1", "sync_ok": "1", "wall_clock_s": "19", "cv_fixed": "404", "cv_generated": "0", "total_jobs": "2022", "backpressure_ratio": "72.33", "scanner_step_s": "0", "jd_step_s": "0", "tagger_step_s": "0", "sync_step_s": "0", "orchestrator_last_run": "2026-07-02 22:00:20 UTC"}, {"timestamp": "2026-07-02T22:48:45.711844+00:00", "cdp_ok": "1", "pending": "217", "aligned": "3", "applied": "55", "blocked": "754", "wasted": "963", "not_aligned": "30", "working": "1", "scanner_ok": "0", "jd_ok": "1", "tagger_ok": "1", "sync_ok": "1", "wall_clock_s": "19", "cv_fixed": "404", "cv_generated": "0", "total_jobs": "2022", "backpressure_ratio": "72.33", "scanner_step_s": "0", "jd_step_s": "0", "tagger_step_s": "0", "sync_step_s": "0", "orchestrator_last_run": "2026-07-02 22:00:20 UTC"}, {"timestamp": "2026-07-02T22:51:40.997201+00:00", "cdp_ok": "1", "pending": "217", "aligned": "3", "applied": "55", "blocked": "754", "wasted": "963", "not_aligned": "30", "working": "1", "scanner_ok": "0", "jd_ok": "1", "tagger_ok": "1", "sync_ok": "1", "wall_clock_s": "19", "cv_fixed": "404", "cv_generated": "0", "total_jobs": "2022", "backpressure_ratio": "72.33", "scanner_step_s": "0", "jd_step_s": "0", "tagger_step_s": "0", "sync_step_s": "0", "orchestrator_last_run": "2026-07-02 22:00:20 UTC"}],
+  crons: [{"id": "c5ff04b374ef", "label": "\ud83e\uddea Pipeline Orchestrator", "icon": "\ud83e\uddea", "last_status": "unknown", "last_run_at": "", "enabled": false}, {"id": "44404c2ac9e3", "label": "\ud83d\udcdd CV Gen Orchestrator", "icon": "\ud83d\udcdd", "last_status": "unknown", "last_run_at": "", "enabled": false}, {"id": "15d2fd4538b5", "label": "\ud83d\udcca Dashboard Sync", "icon": "\ud83d\udcca", "last_status": "unknown", "last_run_at": "", "enabled": false}, {"id": "46f9dda2a4ae", "label": "\ud83d\ude80 Stagehand Apply", "icon": "\ud83d\ude80", "last_status": "unknown", "last_run_at": "", "enabled": false}, {"id": "0882e3ef9417", "label": "\ud83d\udccb JD Fetcher", "icon": "\ud83d\udccb", "last_status": "unknown", "last_run_at": "", "enabled": false}]
+};
+renderAll(STATIC_DATA);
+checkIntegrations();
+// Periodic refresh (attempts fetch, falls back to static)
+setInterval(function() {
+  loadData();
+}, 300000);  // 5 min
+
+</script>
+</body>
+</html>
