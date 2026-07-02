@@ -122,6 +122,34 @@ textarea { width: 100%; min-height: 300px; font-size: 11px; resize: vertical; ba
     <div class="gauge-row" id="expected-gauges"></div>
   </div>
 
+  <!-- n8n Integration — Live Workflow Viewer -->
+  <div class="panel half">
+    <h2>⚡ n8n Integration — Live Workflow</h2>
+    <div style="margin-bottom:8px">
+      <a href="http://localhost:5681" target="_blank" style="color:var(--blue);font-size:11px">↗ Open n8n Editor</a>
+      <span style="color:var(--dim);font-size:10px;margin-left:8px">port 5681</span>
+    </div>
+    <iframe src="http://localhost:5681" style="width:100%;height:360px;border:1px solid var(--border);border-radius:4px;background:#fff" sandbox="allow-scripts allow-same-origin"></iframe>
+    <details style="margin-top:8px">
+      <summary style="cursor:pointer;font-size:11px;color:var(--dim)">📄 Workflow JSON</summary>
+      <pre id="n8n-code" style="background:#f8fafc;padding:10px;border-radius:4px;font-size:10px;max-height:200px;overflow:auto;border:1px solid var(--border)">Loading...</pre>
+    </details>
+  </div>
+
+  <!-- Node-RED Integration — Live Flow Viewer -->
+  <div class="panel half">
+    <h2>🔴 Node-RED Integration — Live Flow</h2>
+    <div style="margin-bottom:8px">
+      <a href="http://localhost:1882" target="_blank" style="color:var(--red);font-size:11px">↗ Open Node-RED Editor</a>
+      <span style="color:var(--dim);font-size:10px;margin-left:8px">port 1882</span>
+    </div>
+    <iframe src="http://localhost:1882" style="width:100%;height:360px;border:1px solid var(--border);border-radius:4px;background:#fff" sandbox="allow-scripts allow-same-origin"></iframe>
+    <details style="margin-top:8px">
+      <summary style="cursor:pointer;font-size:11px;color:var(--dim)">📄 Flow JSON</summary>
+      <pre id="node-red-code" style="background:#f8fafc;padding:10px;border-radius:4px;font-size:10px;max-height:200px;overflow:auto;border:1px solid var(--border)">Loading...</pre>
+    </details>
+  </div>
+
   <!-- Trend Chart -->
   <div class="panel full">
     <h2>📈 Throughput Trend (Last 24h) — Actual vs Expected</h2>
@@ -570,6 +598,397 @@ document.addEventListener('click', e => {
 loadProfile();
 refresh();
 setInterval(refresh, 300000);  // every 5 min
+
+// Load n8n + Node-RED workflow JSON into code blocks
+document.getElementById('n8n-code').textContent = {
+  "name": "V2 Job Application Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "scanner-trigger",
+      "name": "\ud83d\udd0d Scanner (Hourly)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "command": "python3 ~/Documents/Hermes/v2/pipelines/active/jobs/scripts/pipeline_orchestrator_v2.py --step=scanner"
+      },
+      "id": "scanner-exec",
+      "name": "\ud83d\udce1 Run Scanner",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        500,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "command": "python3 ~/Documents/Hermes/v2/pipelines/active/jobs/scripts/pipeline_orchestrator_v2.py --step=jd_fetcher"
+      },
+      "id": "jd-fetcher-exec",
+      "name": "\ud83d\udccb JD Fetcher",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        750,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "command": "python3 ~/Documents/Hermes/v2/pipelines/active/jobs/scripts/pipeline_orchestrator_v2.py --step=tagger"
+      },
+      "id": "tagger-exec",
+      "name": "\ud83c\udff7\ufe0f Tagger",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        1000,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "command": "python3 ~/Documents/Hermes/v2/pipelines/active/jobs/scripts/cv_gen_orchestrator_v2.py"
+      },
+      "id": "cv-gen-exec",
+      "name": "\ud83d\udcdd CV Generator",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        1250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "command": "python3 ~/Documents/Hermes/v2/pipelines/active/jobs/scripts/pipeline_orchestrator_v2.py --step=easy_apply"
+      },
+      "id": "easy-apply-exec",
+      "name": "\ud83d\ude80 Easy Apply",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        1500,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const stats = items[0]?.json || {};\nreturn [{\n  json: {\n    status: 'ok',\n    pipeline: 'v2',\n    stage: 'complete',\n    timestamp: new Date().toISOString(),\n    ...stats\n  }\n}];"
+      },
+      "id": "result-formatter",
+      "name": "\ud83d\udcca Format Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1750,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "\ud83d\udd0d Scanner (Hourly)": {
+      "main": [
+        [
+          {
+            "node": "\ud83d\udce1 Run Scanner",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\ud83d\udce1 Run Scanner": {
+      "main": [
+        [
+          {
+            "node": "\ud83d\udccb JD Fetcher",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\ud83d\udccb JD Fetcher": {
+      "main": [
+        [
+          {
+            "node": "\ud83c\udff7\ufe0f Tagger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\ud83c\udff7\ufe0f Tagger": {
+      "main": [
+        [
+          {
+            "node": "\ud83d\udcdd CV Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\ud83d\udcdd CV Generator": {
+      "main": [
+        [
+          {
+            "node": "\ud83d\ude80 Easy Apply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\ud83d\ude80 Easy Apply": {
+      "main": [
+        [
+          {
+            "node": "\ud83d\udcca Format Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "v2.0",
+  "id": "v2-job-pipeline",
+  "active": false
+};
+document.getElementById('node-red-code').textContent = [
+  {
+    "id": "scanner-inject",
+    "type": "inject",
+    "name": "\ud83d\udd0d Scanner Trigger (Hourly)",
+    "props": [
+      {
+        "p": "payload"
+      },
+      {
+        "p": "topic",
+        "vt": "str"
+      }
+    ],
+    "repeat": "3600",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "v2/pipeline/scanner",
+    "payload": "start",
+    "payloadType": "str",
+    "x": 150,
+    "y": 200,
+    "wires": [
+      [
+        "scanner-exec"
+      ]
+    ]
+  },
+  {
+    "id": "scanner-exec",
+    "type": "exec",
+    "command": "python3 ~/Documents/Hermes/v2/pipelines/active/jobs/scripts/pipeline_orchestrator_v2.py --step=scanner",
+    "addpay": false,
+    "name": "\ud83d\udce1 Run Scanner",
+    "x": 400,
+    "y": 200,
+    "wires": [
+      [
+        "jd-fetcher-inject"
+      ]
+    ]
+  },
+  {
+    "id": "jd-fetcher-inject",
+    "type": "change",
+    "name": "\u27a1\ufe0f Trigger JD Fetcher",
+    "rules": [
+      {
+        "t": "set",
+        "p": "payload",
+        "pt": "msg",
+        "to": "start",
+        "tot": "str"
+      }
+    ],
+    "x": 650,
+    "y": 200,
+    "wires": [
+      [
+        "jd-fetcher-exec"
+      ]
+    ]
+  },
+  {
+    "id": "jd-fetcher-exec",
+    "type": "exec",
+    "command": "python3 ~/Documents/Hermes/v2/pipelines/active/jobs/scripts/pipeline_orchestrator_v2.py --step=jd_fetcher",
+    "addpay": false,
+    "name": "\ud83d\udccb JD Fetcher",
+    "x": 900,
+    "y": 200,
+    "wires": [
+      [
+        "tagger-inject"
+      ]
+    ]
+  },
+  {
+    "id": "tagger-inject",
+    "type": "change",
+    "name": "\u27a1\ufe0f Trigger Tagger",
+    "rules": [
+      {
+        "t": "set",
+        "p": "payload",
+        "pt": "msg",
+        "to": "start",
+        "tot": "str"
+      }
+    ],
+    "x": 1150,
+    "y": 200,
+    "wires": [
+      [
+        "tagger-exec"
+      ]
+    ]
+  },
+  {
+    "id": "tagger-exec",
+    "type": "exec",
+    "command": "python3 ~/Documents/Hermes/v2/pipelines/active/jobs/scripts/pipeline_orchestrator_v2.py --step=tagger",
+    "addpay": false,
+    "name": "\ud83c\udff7\ufe0f Tagger",
+    "x": 1400,
+    "y": 200,
+    "wires": [
+      [
+        "cv-gen-inject"
+      ]
+    ]
+  },
+  {
+    "id": "cv-gen-inject",
+    "type": "change",
+    "name": "\u27a1\ufe0f Trigger CV Gen",
+    "rules": [
+      {
+        "t": "set",
+        "p": "payload",
+        "pt": "msg",
+        "to": "start",
+        "tot": "str"
+      }
+    ],
+    "x": 1650,
+    "y": 200,
+    "wires": [
+      [
+        "cv-gen-exec"
+      ]
+    ]
+  },
+  {
+    "id": "cv-gen-exec",
+    "type": "exec",
+    "command": "python3 ~/Documents/Hermes/v2/pipelines/active/jobs/scripts/cv_gen_orchestrator_v2.py",
+    "addpay": false,
+    "name": "\ud83d\udcdd CV Generator",
+    "x": 1900,
+    "y": 200,
+    "wires": [
+      [
+        "apply-inject"
+      ]
+    ]
+  },
+  {
+    "id": "apply-inject",
+    "type": "change",
+    "name": "\u27a1\ufe0f Trigger Easy Apply",
+    "rules": [
+      {
+        "t": "set",
+        "p": "payload",
+        "pt": "msg",
+        "to": "start",
+        "tot": "str"
+      }
+    ],
+    "x": 2150,
+    "y": 200,
+    "wires": [
+      [
+        "easy-apply-exec"
+      ]
+    ]
+  },
+  {
+    "id": "easy-apply-exec",
+    "type": "exec",
+    "command": "python3 ~/Documents/Hermes/v2/pipelines/active/jobs/scripts/pipeline_orchestrator_v2.py --step=easy_apply",
+    "addpay": false,
+    "name": "\ud83d\ude80 Easy Apply",
+    "x": 2400,
+    "y": 200,
+    "wires": [
+      [
+        "result-format"
+      ]
+    ]
+  },
+  {
+    "id": "result-format",
+    "type": "function",
+    "name": "\ud83d\udcca Format Result",
+    "func": "const out = {\n  status: 'ok',\n  pipeline: 'v2',\n  stage: 'complete',\n  timestamp: new Date().toISOString(),\n  stdout: msg.payload || ''\n};\nmsg.payload = out;\nreturn msg;",
+    "outputs": 1,
+    "x": 2650,
+    "y": 200,
+    "wires": [
+      [
+        "debug-output"
+      ]
+    ]
+  },
+  {
+    "id": "debug-output",
+    "type": "debug",
+    "name": "\ud83d\udce4 Output",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": true,
+    "complete": "payload",
+    "x": 2900,
+    "y": 200,
+    "wires": []
+  }
+];
 </script>
 </body>
 </html>
