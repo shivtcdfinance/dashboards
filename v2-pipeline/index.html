@@ -122,28 +122,28 @@ textarea { width: 100%; min-height: 300px; font-size: 11px; resize: vertical; ba
     <div class="gauge-row" id="expected-gauges"></div>
   </div>
 
-  <!-- n8n Integration — Live Workflow Viewer -->
+  <!-- n8n Integration — Visual Workflow -->
   <div class="panel half">
-    <h2>⚡ n8n Integration — Live Workflow</h2>
+    <h2>⚡ n8n — V2 Pipeline Workflow</h2>
     <div style="margin-bottom:8px">
-      <a href="https://kde-thickness-cast-polymer.trycloudflare.com" target="_blank" style="color:var(--blue);font-size:11px">↗ Open n8n Editor</a>
-      <span style="color:var(--dim);font-size:10px;margin-left:8px">tunneled</span>
+      <a href="https://kde-thickness-cast-polymer.trycloudflare.com" target="_blank" style="color:var(--blue);font-size:11px">↗ Open in n8n</a>
+      <span style="color:var(--dim);font-size:10px;margin-left:8px">workflow imported</span>
     </div>
-    <iframe src="https://kde-thickness-cast-polymer.trycloudflare.com" style="width:100%;height:360px;border:1px solid var(--border);border-radius:4px;background:#fff"></iframe>
+    <canvas id="n8n-canvas" width="600" height="280" style="width:100%;height:auto;border:1px solid var(--border);border-radius:4px;background:#fafbfc"></canvas>
     <details style="margin-top:8px">
       <summary style="cursor:pointer;font-size:11px;color:var(--dim)">📄 Workflow JSON</summary>
       <pre id="n8n-code" style="background:#f8fafc;padding:10px;border-radius:4px;font-size:10px;max-height:200px;overflow:auto;border:1px solid var(--border)">Loading...</pre>
     </details>
   </div>
 
-  <!-- Node-RED Integration — Live Flow Viewer -->
+  <!-- Node-RED Integration — Visual Flow -->
   <div class="panel half">
-    <h2>🔴 Node-RED Integration — Live Flow</h2>
+    <h2>🔴 Node-RED — V2 Pipeline Flow</h2>
     <div style="margin-bottom:8px">
-      <a href="https://mother-ocean-indicators-hey.trycloudflare.com" target="_blank" style="color:var(--red);font-size:11px">↗ Open Node-RED Editor</a>
-      <span style="color:var(--dim);font-size:10px;margin-left:8px">tunneled</span>
+      <a href="https://mother-ocean-indicators-hey.trycloudflare.com" target="_blank" style="color:var(--red);font-size:11px">↗ Open in Node-RED</a>
+      <span style="color:var(--dim);font-size:10px;margin-left:8px">flow deployed</span>
     </div>
-    <iframe src="https://mother-ocean-indicators-hey.trycloudflare.com" style="width:100%;height:360px;border:1px solid var(--border);border-radius:4px;background:#fff"></iframe>
+    <canvas id="nodered-canvas" width="600" height="280" style="width:100%;height:auto;border:1px solid var(--border);border-radius:4px;background:#fafbfc"></canvas>
     <details style="margin-top:8px">
       <summary style="cursor:pointer;font-size:11px;color:var(--dim)">📄 Flow JSON</summary>
       <pre id="node-red-code" style="background:#f8fafc;padding:10px;border-radius:4px;font-size:10px;max-height:200px;overflow:auto;border:1px solid var(--border)">Loading...</pre>
@@ -600,7 +600,7 @@ refresh();
 setInterval(refresh, 300000);  // every 5 min
 
 // Load n8n + Node-RED workflow JSON into code blocks
-document.getElementById('n8n-code').textContent = {
+const n8nJSON = {
   "name": "V2 Job Application Pipeline",
   "nodes": [
     {
@@ -778,7 +778,7 @@ document.getElementById('n8n-code').textContent = {
   "id": "v2-job-pipeline",
   "active": false
 };
-document.getElementById('node-red-code').textContent = [
+const nrJSON = [
   {
     "id": "scanner-inject",
     "type": "inject",
@@ -989,6 +989,86 @@ document.getElementById('node-red-code').textContent = [
     "wires": []
   }
 ];
+document.getElementById('n8n-code').textContent = n8nJSON;
+document.getElementById('node-red-code').textContent = nrJSON;
+
+// Render n8n workflow nodes on canvas
+function drawN8N() {
+  try {
+    const wf = JSON.parse(n8nJSON);
+    const c = document.getElementById('n8n-canvas');
+    if (!c) return;
+    const ctx = c.getContext('2d');
+    const nodes = wf.nodes || [];
+    const colors = {scanner:'#dbeafe', jd:'#fef3c7', tagger:'#ede9fe', cv:'#d1fae5', apply:'#fce7f3'};
+    const strokes = {scanner:'#3b82f6', jd:'#eab308', tagger:'#8b5cf6', cv:'#10b981', apply:'#ec4899'};
+    const emoji = ['🔍','📋','🏷️','📝','🚀'];
+    const names = ['Scanner','JD Fetcher','Tagger','CV Gen','Easy Apply'];
+    const w = 100, h = 60, gap = 15, startX = 15, startY = 40;
+    ctx.clearRect(0,0,c.width,c.height);
+    // Draw connectors
+    ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 2;
+    nodes.slice(0,5).forEach((_,i) => {
+      if (i<4) {
+        ctx.beginPath();
+        ctx.moveTo(startX + i*(w+gap) + w, startY + h/2);
+        ctx.lineTo(startX + (i+1)*(w+gap), startY + h/2);
+        ctx.stroke();
+        // Arrow
+        const ax = startX + (i+1)*(w+gap) - 10;
+        ctx.fillStyle = '#94a3b8';
+        ctx.beginPath(); ctx.moveTo(ax, startY+h/2-5); ctx.lineTo(ax+8, startY+h/2); ctx.lineTo(ax, startY+h/2+5); ctx.fill();
+        ctx.fillStyle = '#cbd5e1';
+      }
+    });
+    // Draw nodes
+    nodes.slice(0,5).forEach((n,i) => {
+      const type = Object.keys(colors)[i] || 'scanner';
+      const x = startX + i*(w+gap);
+      ctx.fillStyle = colors[type]; ctx.strokeStyle = strokes[type]; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.roundRect(x, startY, w, h, 8); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = strokes[type]; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(emoji[i]+' '+names[i], x+w/2, startY+22);
+      ctx.font = '9px sans-serif'; ctx.fillStyle = '#64748b';
+      ctx.fillText('Step '+(i+1)+' of 5', x+w/2, startY+42);
+    });
+  } catch(e) { console.log('n8n render error:', e); }
+}
+
+// Render Node-RED flow nodes on canvas
+function drawNodeRED() {
+  try {
+    const flow = JSON.parse(nrJSON);
+    const c = document.getElementById('nodered-canvas');
+    if (!c) return;
+    const ctx = c.getContext('2d');
+    const nodes = Array.isArray(flow) ? flow : [];
+    const colors = {inject:'#dbeafe', exec:'#fef3c7', change:'#ede9fe', function:'#d1fae5', debug:'#fce7f3'};
+    const strokes = {inject:'#3b82f6', exec:'#eab308', change:'#8b5cf6', function:'#10b981', debug:'#ec4899'};
+    const emoji = {inject:'🔍', exec:'📡', change:'➡️', function:'📊', debug:'📤'};
+    const w = 95, h = 50, gap = 8, startX = 10, startY = 20;
+    // Show first 10 nodes max
+    const shown = nodes.slice(0, 10);
+    const rows = Math.ceil(shown.length / 5);
+    ctx.clearRect(0,0,c.width,c.height);
+    shown.forEach((n,i) => {
+      const row = Math.floor(i/5), col = i%5;
+      const x = startX + col*(w+gap), y = startY + row*(h+10);
+      const type = n.type || 'exec';
+      ctx.fillStyle = colors[type] || '#f1f5f9'; ctx.strokeStyle = strokes[type] || '#94a3b8'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.roundRect(x, y, w, h, 6); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = strokes[type] || '#64748b'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
+      const icon = emoji[type] || '⚙️';
+      const label = (n.name || type).replace(' V2','').slice(0,14);
+      ctx.fillText(icon+' '+label, x+w/2, y+20);
+      ctx.font = '8px sans-serif'; ctx.fillStyle = '#94a3b8';
+      ctx.fillText(type, x+w/2, y+36);
+    });
+  } catch(e) { console.log('Node-RED render error:', e); }
+}
+
+// Draw on load and after data refresh
+setTimeout(() => { drawN8N(); drawNodeRED(); }, 500);
 </script>
 </body>
 </html>
