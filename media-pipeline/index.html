@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Media Pipeline v4</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #f8f9fb; --card: #fff; --border: #e2e4e9; --text: #1a1a2e;
+  --dim: #6b7280; --green: #059669; --green-bg: #d1fae5;
+  --blue: #2563eb; --blue-bg: #dbeafe; --red: #dc2626; --red-bg: #fee2e2;
+  --purple: #7c3aed; --amber: #d97706; --amber-bg: #fef3c7;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);padding:24px;line-height:1.5}
+h1{font-size:1.4rem;font-weight:700}
+.subtitle{color:var(--dim);font-size:0.8rem;margin-bottom:4px}
+.updated{color:var(--purple);font-size:0.72rem;margin-bottom:24px}
+
+.grid{display:grid;gap:14px;margin-bottom:14px}
+.g2{grid-template-columns:1fr 1fr}
+.g3{grid-template-columns:1fr 1fr 1fr}
+.g4{grid-template-columns:1fr 1fr 1fr 1fr}
+.g5{grid-template-columns:repeat(5,1fr)}
+
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;box-shadow:var(--shadow)}
+.card h3{font-size:0.72rem;text-transform:uppercase;color:var(--dim);letter-spacing:0.5px;margin-bottom:10px;font-weight:600}
+.stat{font-size:2rem;font-weight:700;line-height:1.2}
+.stat-label{font-size:0.75rem;color:var(--dim);margin-top:2px}
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:0.7rem;font-weight:600}
+.badge-green{background:var(--green-bg);color:var(--green)}
+.badge-blue{background:var(--blue-bg);color:var(--blue)}
+.badge-amber{background:var(--amber-bg);color:var(--amber)}
+
+canvas{max-height:280px}
+
+.arch-table{width:100%;font-size:0.78rem;border-collapse:collapse}
+.arch-table td{padding:6px 10px;border-bottom:1px solid var(--border)}
+.arch-table td:first-child{color:var(--dim);white-space:nowrap;font-weight:500}
+
+.topic-bar{display:flex;align-items:center;margin-bottom:6px;font-size:0.78rem}
+.topic-name{width:130px;font-weight:500}
+.topic-fill{flex:1;height:20px;background:var(--blue-bg);border-radius:4px;overflow:hidden;margin:0 8px}
+.topic-fill-inner{height:100%;background:var(--blue);border-radius:4px;transition:width 0.5s}
+.topic-count{width:36px;text-align:right;color:var(--dim)}
+
+@media(max-width:768px){.g2,.g3,.g4,.g5{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<h1>📡 Media Pipeline v4</h1>
+<p class="subtitle">Automated content generation · X.com native scheduler · Multi-step content engine</p>
+<p class="updated" id="updated">Loading...</p>
+
+<div class="grid g4">
+  <div class="card"><h3>Total Runs</h3><div class="stat" id="runs">–</div><div class="stat-label">every 2 hours</div></div>
+  <div class="card"><h3>Tweets Scheduled</h3><div class="stat" id="tweets">–</div><div class="stat-label"><span class="badge badge-green">live</span> on X.com</div></div>
+  <div class="card"><h3>Articles Scraped</h3><div class="stat" id="articles">–</div><div class="stat-label">22 RSS + yfinance + API tensor</div></div>
+  <div class="card"><h3>Avg Runtime</h3><div class="stat" id="runtime">–</div><div class="stat-label">seconds per cycle</div></div>
+</div>
+
+<div class="grid g2">
+  <div class="card">
+    <h3>Pipeline Activity</h3>
+    <canvas id="timelineChart"></canvas>
+  </div>
+  <div class="card">
+    <h3>Topic Distribution</h3>
+    <div id="topicBars"></div>
+  </div>
+</div>
+
+<div class="grid g2">
+  <div class="card">
+    <h3>Architecture</h3>
+    <table class="arch-table" id="archTable"></table>
+  </div>
+  <div class="card">
+    <h3>Knowledge Integration</h3>
+    <table class="arch-table" id="knowledgeTable"></table>
+  </div>
+</div>
+
+<div class="card" style="margin-top:4px">
+  <h3 style="display:inline">Engagement</h3>
+  <span class="badge badge-amber" style="margin-left:8px">coming v4.1</span>
+  <p style="color:var(--dim);font-size:0.78rem;margin-top:8px">
+    X.com analytics (impressions, likes, retweets) will be pulled via CDP from the Media Pipeline Chrome profile.
+    Tracked per-tweet, aggregated by topic and time window.
+  </p>
+</div>
+
+<script src="dashboard_data.json?v=1783055308"></script>
+<script>
+const D = DASHBOARD_DATA;
+document.getElementById('updated').textContent = `Last updated: ${D._generated_at?.slice(0,16) || 'unknown'} · Next run: every 2h`;
+
+// Summary cards
+document.getElementById('runs').textContent = D.summary.total_runs;
+document.getElementById('tweets').textContent = D.summary.total_tweets_scheduled;
+document.getElementById('articles').textContent = D.summary.total_articles_scraped;
+document.getElementById('runtime').textContent = D.summary.avg_runtime_seconds + 's';
+
+// Timeline chart
+const times = D.timeline.map(t => t.time?.slice(11,16) || '');
+new Chart(document.getElementById('timelineChart'), {
+  type: 'line',
+  data: {
+    labels: times,
+    datasets: [
+      {label:'Articles',data:D.timeline.map(t=>t.articles),borderColor:'#7c3aed',backgroundColor:'rgba(124,58,237,0.1)',tension:0.3,fill:true},
+      {label:'Tweets',data:D.timeline.map(t=>t.tweets),borderColor:'#059669',backgroundColor:'rgba(5,150,105,0.1)',tension:0.3,fill:true},
+      {label:'Duration (s)',data:D.timeline.map(t=>t.duration),borderColor:'#d97706',borderDash:[4,2],tension:0.3,yAxisID:'y1'}
+    ]
+  },
+  options:{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{position:'bottom',labels:{boxWidth:12,padding:16,font:{size:11}}}},
+    scales:{
+      y:{beginAtZero:true,grid:{color:'#f0f0f0'},ticks:{font:{size:10}}},
+      y1:{position:'right',beginAtZero:true,grid:{display:false},ticks:{font:{size:10},callback:v=>v+'s'}},
+      x:{ticks:{font:{size:10},maxTicksLimit:8}}
+    }
+  }
+});
+
+// Topic distribution
+const topics = D.topic_distribution;
+const maxTopic = Math.max(...Object.values(topics), 1);
+const colors = ['#2563eb','#059669','#7c3aed','#d97706','#dc2626'];
+document.getElementById('topicBars').innerHTML = Object.entries(topics).map(([t,c],i) => `
+  <div class="topic-bar">
+    <span class="topic-name">${t}</span>
+    <div class="topic-fill"><div class="topic-fill-inner" style="width:${(c/maxTopic*100).toFixed(0)}%;background:${colors[i]}"></div></div>
+    <span class="topic-count">${Math.round(c)}</span>
+  </div>
+`).join('');
+
+// Architecture
+const arch = D.architecture;
+document.getElementById('archTable').innerHTML = [
+  ['Pipeline',arch.pipeline],['Topics',arch.topics],['Sources',arch.sources],
+  ['Generation',arch.generation],['Scheduling',arch.scheduling],['Cron',arch.cron],
+  ['GitHub',`<a href="https://github.com/${arch.github}" target="_blank" style="color:var(--blue)">${arch.github}</a>`]
+].map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join('');
+
+// Knowledge integration
+const se = D.search_engine;
+const ts = D.tensor;
+document.getElementById('knowledgeTable').innerHTML = [
+  ['Obsidian Vault',se.vault_path || '–'],
+  ['Skills Indexed',se.skills.toLocaleString()],
+  ['Clusters',se.clusters],
+  ['API Tensor','1,894 APIs · TF-IDF indexed'],
+  ['Tensor Status',ts.tensor_status || '–'],
+  ['Content Engine','score → hook → tweet → polish'],
+].map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join('');
+</script>
+
+</body>
+</html>
