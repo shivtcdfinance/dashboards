@@ -187,6 +187,52 @@ td{padding:6px 8px;border-bottom:1px solid var(--border)}
   </div>
 </div>
 
+<!-- ===== ROW 5: Throughput Trend (Last 24h) ===== -->
+<div class="card" style="margin-bottom:14px">
+  <h3>Throughput Trend — Last 24h (Stacked Stages + V2 Total)</h3>
+  <canvas id="throughputTrendChart" style="max-height:280px"></canvas>
+</div>
+
+<!-- ===== ROW 6: Master.txt Stages + CV Database ===== -->
+<div class="grid grid-2" style="margin-bottom:14px">
+  <div class="card">
+    <h3>Master.txt — Pipeline Stages</h3>
+    <table>
+      <thead><tr><th>Stage</th><th class="num">All</th><th class="num">V2</th><th class="num">%</th></tr></thead>
+      <tbody id="stageTableBody"></tbody>
+    </table>
+  </div>
+  <div class="card">
+    <h3>💾 CV Database</h3>
+    <div class="grid grid-3" style="margin-top:8px" id="cvStatsGrid"></div>
+    <div style="margin-top:12px;font-size:0.7rem;color:var(--dim)" id="cvPathInfo"></div>
+  </div>
+</div>
+
+<!-- ===== ROW 7: 30-Day Trend + Recent Applied ===== -->
+<div class="grid grid-2" style="margin-bottom:14px">
+  <div class="card">
+    <h3>30-Day Trend — Applied · CV Done · Not Aligned</h3>
+    <canvas id="dailyTrendChart" style="max-height:240px"></canvas>
+  </div>
+  <div class="card">
+    <h3>✅ Recently Applied</h3>
+    <div id="recentAppliedList" style="max-height:240px;overflow-y:auto"></div>
+  </div>
+</div>
+
+<!-- ===== ROW 8: Snapshot History ===== -->
+<div class="card" style="margin-bottom:14px">
+  <h3>Snapshot History — All Captured Snapshots</h3>
+  <div style="overflow-x:auto;max-height:300px;overflow-y:auto">
+    <table id="snapshotHistory"><thead><tr>
+      <th>Time</th><th>Wall</th><th class="num">Scn</th><th class="num">JD</th>
+      <th class="num">Tag</th><th class="num">Sync</th><th class="num">Total</th>
+      <th class="num">V2</th><th class="num">BP</th><th class="num">CDP</th>
+    </tr></thead><tbody></tbody></table>
+  </div>
+</div>
+
 <!-- ===== ROW 4: n8n + Node-RED ===== -->
 <div class="grid grid-2" style="margin-bottom:14px">
   <div class="integration-panel" id="n8nPanel">
@@ -948,9 +994,143 @@ function checkService(port, name) {
     });
 }
 
+// ═══════════════ BRIDGE JS ═══════════════
+var bridgeLoaded = false;
+
+async function loadBridge() {
+  try {
+    var resp = await fetch('/data-bridge');
+    var data = await resp.json();
+    renderThroughputTrend(data.history);
+    renderStageTable(data.latest);
+    renderCVDatabase(data);
+    renderDailyTrend(data.history);
+    renderRecentApplied(data.recent_applied);
+    renderSnapshotHistory(data.history);
+    bridgeLoaded = true;
+  } catch(e) {
+    console.error('Bridge error:', e);
+  }
+}
+
+function renderThroughputTrend(history) {
+  if (!history || history.length < 2) return;
+  var labels = history.map(function(d) { var t=d.timestamp||''; return t.length>=16?t.substring(11,16):''; });
+  var pending = history.map(function(d) { return (parseInt(d.v2_pending||0)+parseInt(d.v2_jdfetched||0)); });
+  var aligned = history.map(function(d) { return parseInt(d.v2_aligned||0); });
+  var cvDone  = history.map(function(d) { return (parseInt(d.v2_cv_done||0)+parseInt(d.v2_cv_ready||0)); });
+  var applied = history.map(function(d) { return parseInt(d.v2_applied||0); });
+  var v2Total = history.map(function(d) { return parseInt(d.v2_total||0); });
+
+  if (chartInstances.throughputTrend) chartInstances.throughputTrend.destroy();
+  var ctx = document.getElementById('throughputTrendChart');
+  chartInstances.throughputTrend = new Chart(ctx, {
+    type: 'bar', data: { labels: labels, datasets: [
+      {label:'Pending+JD', data:pending, backgroundColor:'rgba(217,119,6,0.7)', borderRadius:2, stack:'stages'},
+      {label:'Aligned',    data:aligned,  backgroundColor:'rgba(37,99,235,0.7)', borderRadius:2, stack:'stages'},
+      {label:'CV Done',    data:cvDone,   backgroundColor:'rgba(5,150,105,0.7)', borderRadius:2, stack:'stages'},
+      {label:'Applied',    data:applied,  backgroundColor:'rgba(124,58,237,0.7)', borderRadius:2, stack:'stages'},
+      {label:'V2 Total',   data:v2Total,  borderColor:'#059669', borderWidth:2, type:'line', tension:0.3, pointRadius:2, pointBackgroundColor:'#059669', fill:false}
+    ]},
+    options: { responsive:true, maintainAspectRatio:false, interaction:{mode:'index',intersect:false},
+      plugins:{legend:{labels:{color:'#6b7280',boxWidth:10,font:{size:9}}}},
+      scales:{x:{stacked:true,ticks:{color:'#6b7280',maxTicksLimit:12,font:{size:8}},grid:{color:'#e5e7eb'}},
+              y:{stacked:true,beginAtZero:true,ticks:{color:'#6b7280',font:{size:9}},grid:{color:'#e5e7eb'}}}
+    }
+  });
+}
+
+function renderStageTable(latest) {
+  if (!latest) return;
+  var stages = [
+    {k:'pending',l:'Pending',v:'v2_pending'},{k:'jdfetched',l:'JD Fetched',v:'v2_jdfetched'},
+    {k:'aligned',l:'Aligned',v:'v2_aligned'},{k:'cv_done',l:'CV Done',v:'v2_cv_done'},
+    {k:'cv_ready',l:'CV Ready',v:'v2_cv_ready'},{k:'applied',l:'Applied',v:'v2_applied'},
+    {k:'not_aligned',l:'Not Aligned',v:'v2_not_aligned'},{k:'wasted',l:'Wasted',v:'v2_wasted'},
+    {k:'blocked',l:'Blocked',v:'v2_blocked'}
+  ];
+  var total = parseInt(latest.total_jobs)||1;
+  var html='';
+  stages.forEach(function(s){
+    var all=parseInt(latest[s.k])||0, v2=parseInt(latest[s.v])||0, pct=(all/total*100).toFixed(1);
+    var cls='';
+    if(['not_aligned','wasted','blocked'].indexOf(s.k)>=0) cls='hl-red';
+    else if(['cv_done','cv_ready','applied'].indexOf(s.k)>=0) cls='hl-green';
+    else if(s.k==='aligned') cls='hl-blue'; else cls='hl-yellow';
+    html+='<tr><td><span class=\"'+cls+'\">'+s.l+'</span></td><td class=\"num\">'+all+'</td><td class=\"num\">'+v2+'</td><td class=\"num\">'+pct+'%</td></tr>';
+  });
+  document.getElementById('stageTableBody').innerHTML=html;
+}
+
+function renderCVDatabase(data) {
+  document.getElementById('cvStatsGrid').innerHTML=
+    '<div class=\"kpi\"><div class=\"kpi-value hl-green\">'+(data.cvs_on_disk||0)+'</div><div class=\"kpi-label\">CVs on Disk</div></div>'+
+    '<div class=\"kpi\"><div class=\"kpi-value hl-blue\">'+(data.with_cv_path||0)+'</div><div class=\"kpi-label\">With CV Path</div></div>'+
+    '<div class=\"kpi\"><div class=\"kpi-value hl-red\">'+(data.missing_cv||0)+'</div><div class=\"kpi-label\">Missing CV</div></div>';
+  document.getElementById('cvPathInfo').innerHTML=
+    '📁 '+(data.cv_db_path||'')+'<br>V2 cv_done jobs: '+((data.latest&&data.latest.v2_cv_done)||0);
+}
+
+function renderDailyTrend(history) {
+  if (!history||history.length<1) return;
+  var daily={};
+  history.forEach(function(r){
+    var day=(r.timestamp||'').substring(0,10); if(!day) return;
+    if(!daily[day]) daily[day]={applied:0,cv_done:0,not_aligned:0};
+    daily[day].applied     = Math.max(daily[day].applied,     (parseInt(r.applied||0)+parseInt(r.v2_applied||0)));
+    daily[day].cv_done     = Math.max(daily[day].cv_done,     (parseInt(r.cv_done||0)+parseInt(r.v2_cv_done||0)));
+    daily[day].not_aligned = Math.max(daily[day].not_aligned, (parseInt(r.not_aligned||0)+parseInt(r.v2_not_aligned||0)));
+  });
+  var days=Object.keys(daily).sort(); if(days.length===0) return;
+  if(chartInstances.dailyTrend) chartInstances.dailyTrend.destroy();
+  var ctx=document.getElementById('dailyTrendChart');
+  chartInstances.dailyTrend=new Chart(ctx,{
+    type:'bar', data:{labels:days.map(function(d){return d.substring(5);}), datasets:[
+      {label:'Applied',data:days.map(function(d){return daily[d].applied;}),backgroundColor:'#7c3aed',borderRadius:3},
+      {label:'CV Done',data:days.map(function(d){return daily[d].cv_done;}),backgroundColor:'#059669',borderRadius:3},
+      {label:'Not Aligned',data:days.map(function(d){return daily[d].not_aligned;}),backgroundColor:'#f59e0b',borderRadius:3}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#6b7280',boxWidth:10,font:{size:9}}}},
+      scales:{x:{ticks:{color:'#6b7280',font:{size:8}},grid:{display:false}},
+              y:{beginAtZero:true,ticks:{color:'#6b7280',font:{size:9}},grid:{color:'#e5e7eb'}}}
+    }
+  });
+}
+
+function renderRecentApplied(jobs) {
+  if(!jobs||jobs.length===0){
+    document.getElementById('recentAppliedList').innerHTML='<div style=\"text-align:center;color:var(--dim);padding:20px\">No applied jobs yet</div>';return;
+  }
+  var html='<table><thead><tr><th>Company</th><th>Title</th><th>Date</th></tr></thead><tbody>';
+  jobs.slice(0,20).forEach(function(j){
+    html+='<tr><td style=\"font-weight:500\">'+(j.company||'?')+'</td><td style=\"font-size:0.75rem;color:var(--dim)\">'+(j.title||'?').substring(0,40)+'</td><td style=\"font-size:0.7rem;color:var(--dim)\">'+(j.date||'')+'</td></tr>';
+  });
+  html+='</tbody></table>';
+  document.getElementById('recentAppliedList').innerHTML=html;
+}
+
+function renderSnapshotHistory(history) {
+  if(!history||history.length===0){document.querySelector('#snapshotHistory tbody').innerHTML='<tr><td colspan=\"10\" style=\"text-align:center;color:var(--dim)\">No snapshots</td></tr>';return;}
+  var rows=history.slice().reverse(), html='';
+  rows.forEach(function(r){
+    var ts=(r.timestamp||'').replace('T',' ').substring(0,19);
+    var scn=parseInt(r.scanner_ok)?'✅':'<span class=\"hl-red\">❌</span>';
+    var jd=parseInt(r.jd_ok)?'✅':'<span class=\"hl-red\">❌</span>';
+    var tag=parseInt(r.tagger_ok)?'✅':'<span class=\"hl-red\">❌</span>';
+    var syn=parseInt(r.sync_ok)?'✅':'<span class=\"hl-red\">❌</span>';
+    var cdp=parseInt(r.cdp_ok)?'✅':'<span class=\"hl-red\">❌</span>';
+    var wall=(parseInt(r.wall_clock_s)||0)+'s', total=parseInt(r.total_jobs)||0, v2=parseInt(r.v2_total)||0;
+    var bp=(parseFloat(r.backpressure_ratio)||0).toFixed(1);
+    html+='<tr><td style=\"font-size:0.7rem;color:var(--dim)\">'+ts+'</td><td>'+wall+'</td><td class=\"num\">'+scn+'</td><td class=\"num\">'+jd+'</td><td class=\"num\">'+tag+'</td><td class=\"num\">'+syn+'</td><td class=\"num\">'+total+'</td><td class=\"num\">'+v2+'</td><td class=\"num '+((bp>5)?'hl-red':(bp>2?'hl-yellow':'hl-green'))+'\">'+bp+'</td><td class=\"num\">'+cdp+'</td></tr>';
+  });
+  document.querySelector('#snapshotHistory tbody').innerHTML=html;
+}
+
 // ═══════════════ INIT ═══════════════
 loadData();
 checkIntegrations();
+loadBridge();
 </script>
 </body>
 </html>
