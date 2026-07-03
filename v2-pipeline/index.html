@@ -139,30 +139,25 @@ td{padding:6px 8px;border-bottom:1px solid var(--border)}
   <div class="grid grid-4" style="margin-top:8px" id="kpiGrid"></div>
 </div>
 
-<!-- ===== ROW 1: Master.txt Tag Analysis + App Types ===== -->
+<!-- ===== ROW 1: Tag Analysis Table + Status Breakdown ===== -->
 <div class="grid grid-2" style="margin-bottom:14px">
+  <div class="card">
+    <h3>Tag Analysis</h3>
+    <div style="margin-bottom:10px">
+      <div id="tagStackedBar" style="display:flex;height:24px;border-radius:4px;overflow:hidden;background:#e5e7eb"></div>
+    </div>
+    <table>
+      <thead><tr><th>Category</th><th class="num">Count</th><th class="num">%</th><th style="width:30%">Bar</th></tr></thead>
+      <tbody id="tagTableBody"></tbody>
+    </table>
+  </div>
   <div class="card">
     <h3>Master.txt — Status Breakdown</h3>
     <div style="display:flex;gap:8px;margin-bottom:10px">
       <button class="tag-btn active" data-tag="all" onclick="toggleTag('all')">All Jobs</button>
       <button class="tag-btn" data-tag="v2" onclick="toggleTag('v2')">V2 Only</button>
-      <button class="tag-btn" data-tag="linkedin_ea" onclick="toggleTag('linkedin_ea')">LinkedIn EA</button>
-      <button class="tag-btn" data-tag="external" onclick="toggleTag('external')">External</button>
     </div>
     <canvas id="statusBreakdownChart" style="max-height:250px"></canvas>
-  </div>
-  <div class="card">
-    <h3>Tag Analysis</h3>
-    <div class="grid grid-3" style="margin-top:8px" id="tagKpiGrid"></div>
-    <div style="margin-top:12px">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-        <span style="font-size:0.75rem;color:var(--dim)">Pipeline: v2</span>
-        <div style="flex:1;background:#e5e7eb;height:6px;border-radius:3px;overflow:hidden">
-          <div id="v2PctBar" style="height:100%;background:var(--green);border-radius:3px;width:0%;transition:width 0.3s"></div>
-        </div>
-        <span style="font-size:0.75rem;font-weight:600" id="v2PctLabel">0%</span>
-      </div>
-    </div>
   </div>
 </div>
 
@@ -688,35 +683,59 @@ function toggleTag(tag) {
   var latest = window.__latestData;
   if (latest) {
     renderStatusBreakdown(latest);
-    renderTagKpis(latest);
+    renderTagTable(latest);
   }
 }
 
 function renderTagAnalysis(latest) {
   if (!latest) return;
   window.__latestData = latest;
-  renderTagKpis(latest);
+  renderTagTable(latest);
 }
 
-function renderTagKpis(latest) {
+function renderTagTable(latest) {
   var v2Total = parseInt(latest.v2_total) || 0;
+  var pipelineV2 = parseInt(latest.pipeline_v2_tags) || 0;
   var total = parseInt(latest.total_jobs) || 1;
-  var linkedinEa = parseInt(latest.apptype_linkedin_ea) || 0;
-  var external = parseInt(latest.apptype_external) || 0;
-  var expired = parseInt(latest.apptype_expired) || 0;
+  var other = Math.max(0, total - v2Total);
+  // Pipeline:v2 tag jobs that don't have v2_ prefix (avoid double-count)
+  var pipOnly = Math.max(0, pipelineV2 - v2Total);
+  var rest = Math.max(0, total - v2Total - pipOnly);
 
-  document.getElementById('tagKpiGrid').innerHTML =
-    '<div class="kpi"><div class="kpi-value hl-green">'+v2Total+'</div>'+
-    '<div class="kpi-label">V2 Tagged</div><div class="kpi-sub">'+(v2Total/total*100).toFixed(0)+'% of total</div></div>'+
-    '<div class="kpi"><div class="kpi-value hl-blue">'+linkedinEa+'</div>'+
-    '<div class="kpi-label">LinkedIn EA</div><div class="kpi-sub">easy apply jobs</div></div>'+
-    '<div class="kpi"><div class="kpi-value hl-purple">'+external+'</div>'+
-    '<div class="kpi-label">External</div><div class="kpi-sub">'+expired+' expired</div></div>';
+  var pctV2 = (v2Total / total * 100).toFixed(1);
+  var pctPip = (pipOnly / total * 100).toFixed(1);
+  var pctRest = (rest / total * 100).toFixed(1);
+  var pctTotal = '100.0';
 
-  // V2 progress bar
-  var pct = Math.min(100, Math.round(v2Total / total * 100));
-  document.getElementById('v2PctBar').style.width = pct + '%';
-  document.getElementById('v2PctLabel').textContent = pct + '% · ' + v2Total + ' jobs';
+  // Render stacked bar at top
+  var barHtml = '';
+  if (v2Total > 0) barHtml += '<div title="V2 prefix: '+v2Total+'" style="width:'+pctV2+'%;background:#059669"></div>';
+  if (pipOnly > 0) barHtml += '<div title="Pipeline:v2: '+pipOnly+'" style="width:'+pctPip+'%;background:#7c3aed"></div>';
+  if (rest > 0) barHtml += '<div title="Other: '+rest+'" style="width:'+pctRest+'%;background:#d1d5db"></div>';
+  document.getElementById('tagStackedBar').innerHTML = barHtml || '<div style="width:100%;background:#e5e7eb"></div>';
+
+  // Build table rows
+  var rows = [
+    {label: 'V2 Status (v2_ prefix)', count: v2Total, pct: pctV2, color: '#059669', bg: '#d1fae5'},
+    {label: 'Pipeline: v2 tag', count: pipOnly, pct: pctPip, color: '#7c3aed', bg: '#ede9fe'},
+    {label: 'Other (no v2 tags)', count: rest, pct: pctRest, color: '#6b7280', bg: '#f3f4f6'},
+    {label: '<strong>Total</strong>', count: total, pct: pctTotal, color: '#2563eb', bg: '#dbeafe', bold: true},
+  ];
+
+  var tableHtml = rows.map(function(r) {
+    var barW = Math.max(0.5, parseFloat(r.pct));
+    var countStr = r.bold ? '<strong>'+r.count+'</strong>' : r.count;
+    return '<tr>'+
+      '<td>'+r.label+'</td>'+
+      '<td class="num">'+countStr+'</td>'+
+      '<td class="num" style="color:'+r.color+'">'+r.pct+'%</td>'+
+      '<td><div style="background:'+r.bg+';height:16px;border-radius:3px;overflow:hidden">'+
+        '<div style="width:'+barW+'%;height:100%;background:'+r.color+';border-radius:3px;transition:width 0.3s"></div>'+
+      '</div></td>'+
+      '</tr>';
+  }).join('');
+
+  document.getElementById('tagTableBody').innerHTML = tableHtml;
 }
 
 function renderStatusBreakdown(latest) {
@@ -726,8 +745,10 @@ function renderStatusBreakdown(latest) {
 
   var stages = [
     {k: 'pending', label: 'Pending', color: '#d97706'},
+    {k: 'jdfetched', label: 'JD Fetched', color: '#f59e0b'},
     {k: 'aligned', label: 'Aligned', color: '#2563eb'},
     {k: 'working', label: 'Working', color: '#7c3aed'},
+    {k: 'cv_done', label: 'CV Done', color: '#10b981'},
     {k: 'applied', label: 'Applied', color: '#059669'},
     {k: 'blocked', label: 'Blocked', color: '#dc2626'},
     {k: 'wasted', label: 'Wasted', color: '#6b7280'},
