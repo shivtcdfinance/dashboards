@@ -19,13 +19,10 @@ h1{font-size:1.3rem;font-weight:700;margin-bottom:2px}
 h2{font-size:1rem;font-weight:600;margin:20px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
 .subtitle{color:var(--dim);font-size:0.75rem;margin-bottom:4px}
 .updated{color:var(--purple);font-size:0.7rem;margin-bottom:16px}
-
 .grid{display:grid;gap:12px;margin-bottom:12px}
 .g2{grid-template-columns:1fr 1fr}
 .g3{grid-template-columns:1fr 1fr 1fr}
 .g4{grid-template-columns:repeat(4,1fr)}
-.g5{grid-template-columns:repeat(5,1fr)}
-
 .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow)}
 .card h3{font-size:0.68rem;text-transform:uppercase;color:var(--dim);letter-spacing:0.5px;margin-bottom:8px;font-weight:600}
 .stat{font-size:1.8rem;font-weight:700;line-height:1.2;color:var(--text)}
@@ -33,12 +30,8 @@ h2{font-size:1rem;font-weight:600;margin:20px 0 10px;padding-bottom:6px;border-b
 .stat-sub{font-size:0.65rem;color:var(--dim)}
 .badge{display:inline-block;padding:1px 7px;border-radius:4px;font-size:0.65rem;font-weight:600}
 .badge-green{background:var(--green-bg);color:var(--green)}
-.badge-blue{background:var(--blue-bg);color:var(--blue)}
-.badge-red{background:var(--red-bg);color:var(--red)}
 .badge-amber{background:var(--amber-bg);color:var(--amber)}
-
 canvas{max-height:260px}
-
 .mkt-table{width:100%;font-size:0.73rem;border-collapse:collapse}
 .mkt-table th{text-align:left;color:var(--dim);font-size:0.65rem;font-weight:600;padding:4px 8px;border-bottom:1px solid var(--border);text-transform:uppercase}
 .mkt-table td{padding:4px 8px;border-bottom:1px solid rgba(48,54,61,0.5);white-space:nowrap}
@@ -47,51 +40,49 @@ canvas{max-height:260px}
 .mkt-table .name{color:var(--dim)}
 .mkt-table .val{text-align:right;font-weight:500}
 .mkt-table .chg{text-align:right;font-weight:600}
-
 .spread-bar{display:flex;align-items:center;margin:3px 0;font-size:0.72rem}
 .spread-hour{width:36px;text-align:right;color:var(--dim);font-weight:500;margin-right:8px}
 .spread-topic{flex:1;padding:3px 8px;border-radius:4px;font-weight:500;font-size:0.7rem}
-
 .arch-table{width:100%;font-size:0.73rem;border-collapse:collapse}
 .arch-table td{padding:4px 8px;border-bottom:1px solid rgba(48,54,61,0.5)}
 .arch-table td:first-child{color:var(--dim);white-space:nowrap;font-weight:500;width:90px}
-
 .topic-bar{display:flex;align-items:center;margin-bottom:4px;font-size:0.73rem}
 .topic-name{width:120px;font-weight:500;font-size:0.7rem}
 .topic-fill{flex:1;height:18px;background:rgba(88,166,255,0.1);border-radius:3px;overflow:hidden;margin:0 8px}
-.topic-fill-inner{height:100%;border-radius:3px;transition:width 0.5s}
+.topic-fill-inner{height:100%;border-radius:3px}
 .topic-count{width:30px;text-align:right;color:var(--dim);font-size:0.7rem}
-
 .cap-bar{display:flex;align-items:center;margin:6px 0;font-size:0.72rem}
 .cap-label{width:80px;color:var(--dim)}
 .cap-fill{flex:1;height:6px;background:rgba(88,166,255,0.1);border-radius:3px;overflow:hidden;margin:0 8px}
-.cap-fill-inner{height:100%;border-radius:3px;transition:width 0.5s}
+.cap-fill-inner{height:100%;border-radius:3px}
 .cap-val{width:40px;text-align:right;font-weight:600;font-size:0.7rem}
-
 .insight{font-size:0.7rem;color:var(--dim);margin-top:6px;padding:6px 8px;background:rgba(88,166,255,0.04);border-left:2px solid var(--blue);border-radius:2px}
-
-@media(max-width:768px){.g2,.g3,.g4,.g5{grid-template-columns:1fr}}
+@media(max-width:768px){.g2,.g3,.g4{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 
 <h1>📡 Media Pipeline v4</h1>
 <p class="subtitle">Content generation · X.com native scheduler · Multi-step engine · Live market data</p>
-<p class="updated" id="updated">Loading…</p>
+<p class="updated">Last updated: 2026-07-04T21:40 UTC · Next run: every 2h · 21 total runs</p>
 
 <!-- SUMMARY -->
 <div class="grid g4">
-  <div class="card"><h3>Pipeline Runs</h3><div class="stat" id="runs">–</div><div class="stat-label"><span id="runs_today">–</span> runs today · every 2h</div></div>
-  <div class="card"><h3>Tweets Scheduled</h3><div class="stat" id="tweets">–</div><div class="stat-label"><span class="badge badge-green">live</span> on X.com native scheduler</div></div>
-  <div class="card"><h3>Articles / Cycle</h3><div class="stat" id="articles">–</div><div class="stat-label">RSS + yfinance + EDGAR + API tensor</div></div>
-  <div class="card"><h3>Avg Runtime</h3><div class="stat" id="runtime">–</div><div class="stat-label">seconds per cycle</div></div>
+  <div class="card"><h3>Pipeline Runs</h3><div class="stat">21</div><div class="stat-label">0 runs today · every 2h</div></div>
+  <div class="card"><h3>Tweets Scheduled</h3><div class="stat">10</div><div class="stat-label"><span class="badge badge-green">live</span> on X.com native scheduler</div></div>
+  <div class="card"><h3>Articles / Cycle</h3><div class="stat">90</div><div class="stat-label">RSS + yfinance + EDGAR + API tensor</div></div>
+  <div class="card"><h3>Avg Runtime</h3><div class="stat">79.7s</div><div class="stat-label">seconds per cycle</div></div>
 </div>
 
 <!-- TOMORROW CAP -->
-<div class="card" id="capCard" style="margin-bottom:12px">
+<div class="card" style="margin-bottom:12px">
   <h3>📅 Tomorrow's Schedule Cap</h3>
-  <div id="capBar"></div>
-  <div id="capDetail" class="stat-sub" style="margin-top:4px"></div>
+  <div class="cap-bar">
+    <span class="cap-label">Tomorrow</span>
+    <div class="cap-fill"><div class="cap-fill-inner" style="width:42%;background:#3fb950"></div></div>
+    <span class="cap-val">5/12</span>
+  </div>
+  <div class="stat-sub" style="margin-top:4px">7 open slots — pipeline fills on next run</div>
 </div>
 
 <!-- MARKET SNAPSHOT -->
@@ -99,55 +90,87 @@ canvas{max-height:260px}
 <div class="grid g3">
   <div class="card">
     <h3>🌍 Global Indices</h3>
-    <table class="mkt-table" id="indicesTable"><tbody></tbody></table>
+    <table class="mkt-table"><tbody>
+<tr><td class="name">S&P 500</td><td class="val">7,483</td><td class="chg up">↑ 0.0%</td></tr>
+<tr><td class="name">Nasdaq</td><td class="val">25,833</td><td class="chg down">↓ 0.8%</td></tr>
+<tr><td class="name">Dow Jones</td><td class="val">52,900</td><td class="chg up">↑ 1.14%</td></tr>
+<tr><td class="name">Nifty 50</td><td class="val">24,271</td><td class="chg up">↑ 0.39%</td></tr>
+<tr><td class="name">Sensex</td><td class="val">77,764</td><td class="chg up">↑ 0.34%</td></tr>
+    </tbody></table>
   </div>
   <div class="card">
-    <h3>🛢️ Commodities & Yields</h3>
-    <table class="mkt-table" id="commoditiesTable"><tbody></tbody></table>
-    <div style="margin-top:8px;font-size:0.7rem;color:var(--dim)" id="bondsDiv"></div>
+    <h3>🛢️ Commodities &amp; Yields</h3>
+    <table class="mkt-table"><tbody>
+<tr><td class="name">Crude Oil WTI</td><td class="val">$68.78</td></tr>
+<tr><td class="name">Gold</td><td class="val">$4,187.30</td></tr>
+<tr><td class="name">Silver</td><td class="val">$62.81</td></tr>
+<tr><td class="name">Copper</td><td class="val">$6.22</td></tr>
+    </tbody></table>
+    <div style="margin-top:8px;font-size:0.7rem;color:var(--dim)">US 10-Year Treasury Yield: 4.48%</div>
   </div>
   <div class="card">
-    <h3>💱 Forex & Volatility</h3>
-    <table class="mkt-table" id="forexTable"><tbody></tbody></table>
-    <div style="margin-top:8px;font-size:0.72rem;font-weight:600" id="vixDiv"></div>
+    <h3>💱 Forex &amp; Volatility</h3>
+    <table class="mkt-table"><tbody>
+<tr><td class="name">USD/INR</td><td class="val">95.20</td></tr>
+<tr><td class="name">EUR/USD</td><td class="val">.1440</td></tr>
+<tr><td class="name">GBP/USD</td><td class="val">.3350</td></tr>
+<tr><td class="name">USD/JPY</td><td class="val">61.3370</td></tr>
+<tr><td class="name">EUR/INR</td><td class="val">08.8990</td></tr>
+    </tbody></table>
+    <div style="margin-top:8px;font-size:0.72rem;font-weight:600">🧭 <span style="color:#3fb950">VIX (Market Volatility): 15.81</span></div>
   </div>
 </div>
 
 <!-- SECTOR MOVERS -->
 <div class="card" style="margin-bottom:12px">
   <h3>🏭 Sector Movers — Best / Worst</h3>
-  <div class="grid g3" id="sectorsGrid"></div>
-  <div class="insight" id="sectorInsight"></div>
+  <div class="grid g3">
+<div class="card" style="padding:10px"><h3 style="margin-bottom:4px">Tech</h3><div style="font-size:0.73rem">🟢 <span class="up">AAPL <b>+4.8%</b></span></div><div style="font-size:0.73rem">🔴 <span class="down">META <b>-4.9%</b></span></div></div>
+<div class="card" style="padding:10px"><h3 style="margin-bottom:4px">Finance</h3><div style="font-size:0.73rem">🟢 <span class="up">MS <b>+1.0%</b></span></div><div style="font-size:0.73rem">🔴 <span class="down">WFC <b>-0.5%</b></span></div></div>
+<div class="card" style="padding:10px"><h3 style="margin-bottom:4px">Healthcare</h3><div style="font-size:0.73rem">🟢 <span class="up">ABBV <b>+4.0%</b></span></div><div style="font-size:0.73rem">🔴 <span class="down">UNH <b>-0.3%</b></span></div></div>
+<div class="card" style="padding:10px"><h3 style="margin-bottom:4px">Consumer</h3><div style="font-size:0.73rem">🟢 <span class="up">MCD <b>+4.2%</b></span></div><div style="font-size:0.73rem">🔴 <span class="down">TSLA <b>-7.5%</b></span></div></div>
+  </div>
+  <div class="insight">💡 Tech leads with AAPL +4.8%. Consumer lags — TSLA -7.5%.</div>
 </div>
 
 <!-- CHARTS -->
 <div class="grid g2">
   <div class="card">
-    <h3>Pipeline Activity (last 21 runs)</h3>
+    <h3>Pipeline Activity</h3>
     <canvas id="timelineChart"></canvas>
   </div>
   <div class="card">
     <h3>Topic Distribution</h3>
-    <div id="topicBars"></div>
-    <div class="insight" style="margin-top:10px" id="topicInsight"></div>
+<div class="topic-bar"><span class="topic-name">AI</span><div class="topic-fill"><div class="topic-fill-inner" style="width:100%;background:#58a6ff"></div></div><span class="topic-count">1</span></div>
+<div class="topic-bar"><span class="topic-name">Company Analysis</span><div class="topic-fill"><div class="topic-fill-inner" style="width:100%;background:#d2991d"></div></div><span class="topic-count">1</span></div>
+<div class="topic-bar"><span class="topic-name">Finance</span><div class="topic-fill"><div class="topic-fill-inner" style="width:100%;background:#bc8cff"></div></div><span class="topic-count">1</span></div>
+<div class="topic-bar"><span class="topic-name">Global Economy</span><div class="topic-fill"><div class="topic-fill-inner" style="width:100%;background:#3fb950"></div></div><span class="topic-count">1</span></div>
+<div class="topic-bar"><span class="topic-name">Professional Tools</span><div class="topic-fill"><div class="topic-fill-inner" style="width:100%;background:#f85149"></div></div><span class="topic-count">1</span></div>
+    <div class="insight" style="margin-top:10px">5 topics active · balanced spread across 7 UTC time slots</div>
   </div>
 </div>
 
 <!-- SPREAD TIMELINE -->
 <div class="card" style="margin-bottom:12px">
   <h3>📋 Scheduled Tweet Spread — Tomorrow</h3>
-  <div id="spreadTimeline"></div>
+<div class="spread-bar"><span class="spread-hour">21:00</span><span class="spread-topic" style="background:#58a6ff22;color:#58a6ff">AI</span><span style="font-size:0.65rem;color:var(--dim);margin-left:6px">Sat, Jul 04 21:02 UTC</span></div>
+<div class="spread-bar"><span class="spread-hour">21:00</span><span class="spread-topic" style="background:#3fb95022;color:#3fb950">Global Economy</span><span style="font-size:0.65rem;color:var(--dim);margin-left:6px">Sat, Jul 04 21:02 UTC</span></div>
+<div class="spread-bar"><span class="spread-hour">21:00</span><span class="spread-topic" style="background:#bc8cff22;color:#bc8cff">Finance</span><span style="font-size:0.65rem;color:var(--dim);margin-left:6px">Sat, Jul 04 21:02 UTC</span></div>
+<div class="spread-bar"><span class="spread-hour">21:00</span><span class="spread-topic" style="background:#d2991d22;color:#d2991d">Company Analysis</span><span style="font-size:0.65rem;color:var(--dim);margin-left:6px">Sat, Jul 04 21:02 UTC</span></div>
+<div class="spread-bar"><span class="spread-hour">21:00</span><span class="spread-topic" style="background:#f8514922;color:#f85149">Professional Tools</span><span style="font-size:0.65rem;color:var(--dim);margin-left:6px">Sat, Jul 04 21:02 UTC</span></div>
 </div>
 
 <!-- ARCHITECTURE + KNOWLEDGE -->
 <div class="grid g2">
   <div class="card">
     <h3>⚙️ Architecture</h3>
-    <table class="arch-table" id="archTable"><tbody></tbody></table>
+    <table class="arch-table"><tbody>
+<tr><td>Pipeline</td><td>v4.1</td></tr><tr><td>Topics</td><td>5</td></tr><tr><td>Sources</td><td>RSS (22+ feeds) + yfinance (indices/commodities/forex) + EDGAR + API tensor (1,894 APIs)</td></tr><tr><td>Generation</td><td>4-step: score → hook → tweet (copywriting) → polish → variety inject</td></tr><tr><td>Scheduling</td><td>X.com native scheduler, +1 day, spread across 7 UTC slots</td></tr><tr><td>Cron</td><td>0 */2 * * * (every 2 hours)</td></tr><tr><td>GitHub</td><td><a href="https://github.com/shivtcdfinance/media-pipeline" target="_blank" style="color:var(--blue)">shivtcdfinance/media-pipeline</a></td></tr><tr><td>Tracker</td><td>CSV: dedup, atomic writes, cap enforcement, spread scheduling</td></tr>    </tbody></table>
   </div>
   <div class="card">
     <h3>🧠 Knowledge Integration</h3>
-    <table class="arch-table" id="knowledgeTable"><tbody></tbody></table>
+    <table class="arch-table"><tbody>
+<tr><td>Obsidian Vault</td><td>2026-07-02_tensor-vault</td></tr><tr><td>Skills Indexed</td><td>3,922</td></tr><tr><td>Clusters</td><td>50</td></tr><tr><td>API Tensor</td><td>1,894 APIs · TF-IDF indexed</td></tr><tr><td>Tensor Status</td><td>Trained: 2154 skills, 50 clusters</td></tr><tr><td>Content Engine</td><td>score → hook → tweet → polish → variety</td></tr>    </tbody></table>
   </div>
 </div>
 
@@ -157,153 +180,34 @@ canvas{max-height:260px}
   <span class="badge badge-amber" style="margin-left:8px">coming v4.2</span>
   <p style="color:var(--dim);font-size:0.73rem;margin-top:8px">
     Per-tweet analytics (views, likes, retweets) from X.com CDP. Aggregated by topic and time window.
-    <span id="engagementPreview"></span>
   </p>
 </div>
 
-<script>var DASHBOARD_DATA = {"_generated_at": "2026-07-04T21:06:58.195635+00:00", "summary": {"total_runs": 21, "runs_today": 0, "total_articles_scraped": 1900, "total_tweets_generated": 87, "total_tweets_scheduled": 10, "avg_runtime_seconds": 79.7, "last_run": "2026:07:04 22:02:03", "next_run": "every 2 hours (0 */2 * * *)", "cap_tomorrow": "5/12"}, "timeline": [{"time": "07:03 06:02", "articles": 100, "tweets": 4, "scheduled": 0, "duration": 86.9, "error": false}, {"time": "07:03 08:02", "articles": 100, "tweets": 4, "scheduled": 0, "duration": 99.2, "error": false}, {"time": "07:03 10:01", "articles": 100, "tweets": 5, "scheduled": 0, "duration": 110.6, "error": false}, {"time": "07:03 12:02", "articles": 0, "tweets": 0, "scheduled": 0, "duration": 0, "error": false}, {"time": "07:03 14:02", "articles": 0, "tweets": 0, "scheduled": 0, "duration": 0, "error": false}, {"time": "07:03 16:01", "articles": 100, "tweets": 5, "scheduled": 0, "duration": 0, "error": false}, {"time": "07:03 18:02", "articles": 100, "tweets": 5, "scheduled": 0, "duration": 88.2, "error": false}, {"time": "07:03 20:01", "articles": 100, "tweets": 5, "scheduled": 0, "duration": 88.0, "error": false}, {"time": "07:03 22:01", "articles": 100, "tweets": 5, "scheduled": 0, "duration": 107.9, "error": false}, {"time": "07:04 00:01", "articles": 100, "tweets": 5, "scheduled": 0, "duration": 94.9, "error": false}, {"time": "07:04 02:01", "articles": 100, "tweets": 5, "scheduled": 0, "duration": 90.0, "error": false}, {"time": "07:04 04:01", "articles": 100, "tweets": 5, "scheduled": 0, "duration": 96.7, "error": false}, {"time": "07:04 06:01", "articles": 100, "tweets": 5, "scheduled": 0, "duration": 100.9, "error": false}, {"time": "07:04 08:01", "articles": 100, "tweets": 5, "scheduled": 0, "duration": 90.3, "error": false}, {"time": "07:04 10:01", "articles": 100, "tweets": 4, "scheduled": 0, "duration": 96.4, "error": false}, {"time": "07:04 12:00", "articles": 100, "tweets": 0, "scheduled": 0, "duration": 0, "error": false}, {"time": "07:04 14:01", "articles": 100, "tweets": 5, "scheduled": 0, "duration": 105.2, "error": false}, {"time": "07:04 16:02", "articles": 100, "tweets": 5, "scheduled": 0, "duration": 110.4, "error": false}, {"time": "07:04 18:02", "articles": 100, "tweets": 5, "scheduled": 0, "duration": 106.2, "error": false}, {"time": "07:04 20:02", "articles": 100, "tweets": 5, "scheduled": 5, "duration": 101.9, "error": false}, {"time": "07:04 22:02", "articles": 100, "tweets": 5, "scheduled": 5, "duration": 100.2, "error": false}], "tracker": {"total": 5, "by_status": {"scheduled": 5}, "by_topic": {"AI": {"scheduled": 1, "posted": 0, "deleted": 0, "failed": 0, "views": 0, "likes": 0, "retweets": 0}, "Company Analysis": {"scheduled": 1, "posted": 0, "deleted": 0, "failed": 0, "views": 0, "likes": 0, "retweets": 0}, "Finance": {"scheduled": 1, "posted": 0, "deleted": 0, "failed": 0, "views": 0, "likes": 0, "retweets": 0}, "Global Economy": {"scheduled": 1, "posted": 0, "deleted": 0, "failed": 0, "views": 0, "likes": 0, "retweets": 0}, "Professional Tools": {"scheduled": 1, "posted": 0, "deleted": 0, "failed": 0, "views": 0, "likes": 0, "retweets": 0}}, "scheduled_slots": [{"topic": "AI", "time": "Sat, Jul 04 21:02 UTC", "hour": 21}, {"topic": "Global Economy", "time": "Sat, Jul 04 21:02 UTC", "hour": 21}, {"topic": "Finance", "time": "Sat, Jul 04 21:02 UTC", "hour": 21}, {"topic": "Company Analysis", "time": "Sat, Jul 04 21:02 UTC", "hour": 21}, {"topic": "Professional Tools", "time": "Sat, Jul 04 21:02 UTC", "hour": 21}]}, "market": {"indices": ["S&P 500 (^GSPC): 7,483 | \u2191 0.00% vs previous close of 7,483", "Nasdaq (^IXIC): 25,833 | \u2193 0.80% vs previous close of 26,040", "Dow Jones (^DJI): 52,900 | \u2191 1.14% vs previous close of 52,305", "Nifty 50 (^NSEI): 24,271 | \u2191 0.39% vs previous close of 24,176", "Sensex (^BSESN): 77,764 | \u2191 0.34% vs previous close of 77,502"], "commodities": ["Crude Oil WTI: $68.78", "Gold: $4,187.30", "Silver: $62.81", "Copper: $6.22"], "bonds": ["US 10-Year Treasury Yield: 4.48%"], "forex": ["USD/INR: \u20b995.20", "EUR/USD: 1.1440", "GBP/USD: 1.3350", "USD/JPY: 161.3370", "EUR/INR: 108.8990"], "sectors": ["Tech sector: AAPL +4.8%, META -4.9%", "Finance sector: MS +1.0%, WFC -0.5%", "Energy sector: CVX +2.1%, SLB 0.1%", "Healthcare sector: ABBV +4.0%, UNH -0.3%", "Consumer sector: MCD +4.2%, TSLA -7.5%", "India Large Cap sector: BHARTIARTL +1.9%, RELIANCE 0.0%"], "vix": "VIX (Market Volatility): 15.81"}, "latest_tweets": [{"topic": "AI", "slot": "Sun, Jul 05 at 04:00"}, {"topic": "Global Economy", "slot": "Sun, Jul 05 at 07:00"}, {"topic": "Finance", "slot": "Sun, Jul 05 at 10:00"}, {"topic": "Company Analysis", "slot": "Sun, Jul 05 at 13:00"}, {"topic": "Professional Tools", "slot": "Sun, Jul 05 at 16:00"}], "tensor": {"status": "Trained: 2154 skills, 50 clusters", "updated": "2026-07-04T21:06:59.857705+00:00"}, "search_engine": {"vault_path": "2026-07-02_tensor-vault", "skills": 3922, "clusters": 50, "total_vaults": 7}, "architecture": {"pipeline": "v4.1", "topics": 5, "sources": "RSS (22+ feeds) + yfinance (indices/commodities/forex) + EDGAR + API tensor (1,894 APIs)", "generation": "4-step: score \u2192 hook \u2192 tweet (copywriting) \u2192 polish \u2192 variety inject", "scheduling": "X.com native scheduler, +1 day, spread across 7 UTC slots", "cron": "0 */2 * * * (every 2 hours)", "github": "shivtcdfinance/media-pipeline"}};</script>
-
 <script>
-var D = DASHBOARD_DATA;
-var S = D.summary, T = D.tracker, M = D.market;
-
-document.getElementById('updated').innerHTML =
-  'Last updated: ' + (D._generated_at||'').slice(0,16) + ' UTC · Next run: every 2h · Tensor: ' + ((D.tensor||{}).status||'').slice(0,40);
-
-// Summary
-document.getElementById('runs').textContent = S.total_runs;
-document.getElementById('runs_today').textContent = S.runs_today;
-document.getElementById('tweets').textContent = S.total_tweets_scheduled;
-document.getElementById('articles').textContent = Math.round(S.total_articles_scraped / Math.max(S.total_runs,1));
-document.getElementById('runtime').textContent = S.avg_runtime_seconds + 's';
-
-// Cap
-var capBooked = parseInt(S.cap_tomorrow) || 0, capMax = 12;
-var capPct = Math.round(capBooked / capMax * 100);
-var capColor = capPct > 80 ? 'var(--red)' : capPct > 50 ? 'var(--amber)' : 'var(--green)';
-document.getElementById('capBar').innerHTML =
-  '<div class="cap-bar"><span class="cap-label">Tomorrow</span><div class="cap-fill"><div class="cap-fill-inner" style="width:'+capPct+'%;background:'+capColor+'"></div></div><span class="cap-val">'+capBooked+'/'+capMax+'</span></div>';
-document.getElementById('capDetail').textContent =
-  capBooked >= capMax ? '⚠️ Cap reached — next run will skip scheduling' :
-  capBooked >= 8 ? '⚠️ ' + (capMax-capBooked) + ' slots remaining — near cap' :
-  (capMax-capBooked) + ' open slots — pipeline will fill on next run';
-
-// Market: Indices
-var it = document.getElementById('indicesTable').querySelector('tbody');
-(M.indices||[]).forEach(function(item) {
-  var m = item.match(/(.+?)\\(.+?\\):\\s*([\\d,]+)\\s*\\|\\s*(↑|↓)\\s*([\\d.]+)%/);
-  if (m) { var cls = m[4]==='↑'?'up':'down'; it.innerHTML += '<tr><td class="name">'+m[1].trim()+'</td><td class="val">'+m[2]+'</td><td class="chg '+cls+'">'+m[3]+' '+m[4]+'%</td></tr>'; }
-});
-
-// Market: Commodities
-var ct = document.getElementById('commoditiesTable').querySelector('tbody');
-(M.commodities||[]).forEach(function(item) {
-  var m = item.match(/(.+?):\\s*\\$?([\\d,]+\\.?\\d*)/);
-  if (m) ct.innerHTML += '<tr><td class="name">'+m[1]+'</td><td class="val">$'+m[2]+'</td></tr>';
-});
-document.getElementById('bondsDiv').textContent = (M.bonds||[]).join(' · ') || '—';
-
-// Market: Forex + VIX
-var ft = document.getElementById('forexTable').querySelector('tbody');
-(M.forex||[]).forEach(function(item) {
-  var m = item.match(/(.+?):\\s*.?([\\d,.]+)/);
-  if (m) ft.innerHTML += '<tr><td class="name">'+m[1]+'</td><td class="val">'+m[2]+'</td></tr>';
-});
-var vixMatch = (M.vix||'').match(/[\\d.]+/);
-var vixVal = vixMatch ? parseFloat(vixMatch[0]) : 0;
-document.getElementById('vixDiv').innerHTML = M.vix
-  ? '🧭 <span style="color:'+(vixVal>25?'var(--red)':'var(--green)')+'">'+M.vix+'</span>'
-  : '—';
-
-// Sector Movers
-var sg = document.getElementById('sectorsGrid');
-var sectorCards = [];
-(M.sectors||[]).forEach(function(item) {
-  var m = item.match(/(.+?) sector:\\s*(.+?)\\s+([+-][\\d.]+%),\\s*(.+?)\\s+([+-][\\d.]+%)/);
-  if (m) sectorCards.push({sector:m[1], best:{name:m[2],chg:m[3]}, worst:{name:m[4],chg:m[5]}});
-});
-sectorCards.forEach(function(sc) {
-  sg.innerHTML += '<div class="card" style="padding:10px"><h3 style="margin-bottom:4px">'+sc.sector+'</h3><div style="font-size:0.73rem">🟢 <span class="up">'+sc.best.name+' <b>'+sc.best.chg+'</b></span></div><div style="font-size:0.73rem">🔴 <span class="down">'+sc.worst.name+' <b>'+sc.worst.chg+'</b></span></div></div>';
-});
-if (sectorCards.length) {
-  var topS = sectorCards.slice().sort(function(a,b){return parseFloat(a.best.chg)-parseFloat(b.best.chg)}).reverse()[0];
-  var worstS = sectorCards.slice().sort(function(a,b){return parseFloat(a.worst.chg)-parseFloat(b.worst.chg)})[0];
-  document.getElementById('sectorInsight').textContent = '💡 '+topS.sector+' leads with '+topS.best.name+' '+topS.best.chg+'. '+worstS.sector+' lags — '+worstS.worst.name+' '+worstS.worst.chg+'.';
-}
-
-// Timeline Chart
-var tlLabels = (D.timeline||[]).map(function(t){return (t.time||'').slice(0,5)});
-new Chart(document.getElementById('timelineChart'), {
-  type: 'line',
-  data: {
-    labels: tlLabels,
-    datasets: [
-      {label:'Articles',data:(D.timeline||[]).map(function(t){return t.articles}),borderColor:'#bc8cff',backgroundColor:'rgba(188,140,255,0.08)',tension:0.3,fill:true,pointRadius:1},
-      {label:'Tweets Sched',data:(D.timeline||[]).map(function(t){return t.scheduled||t.tweets}),borderColor:'#3fb950',tension:0.3,borderWidth:2,pointRadius:2},
-      {label:'Duration (s)',data:(D.timeline||[]).map(function(t){return t.duration}),borderColor:'#d2991d',borderDash:[4,2],tension:0.3,yAxisID:'y1',pointRadius:0}
-    ]
-  },
-  options:{
-    responsive:true,maintainAspectRatio:false,interaction:{intersect:false,mode:'index'},
-    plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:12,font:{size:10},color:'#8b949e'}}},
-    scales:{
-      y:{beginAtZero:true,grid:{color:'rgba(48,54,61,0.4)'},ticks:{font:{size:9},color:'#8b949e'}},
-      y1:{position:'right',beginAtZero:true,grid:{display:false},ticks:{font:{size:9},color:'#8b949e',callback:function(v){return v+'s'}}},
-      x:{ticks:{font:{size:9},color:'#8b949e',maxTicksLimit:12}}
+var TIMELINE = [{"time": "07:03 06:02", "articles": 100, "tweets": 4, "scheduled": 0, "duration": 86.9, "error": false}, {"time": "07:03 08:02", "articles": 100, "tweets": 4, "scheduled": 0, "duration": 99.2, "error": false}, {"time": "07:03 10:01", "articles": 100, "tweets": 5, "scheduled": 0, "duration": 110.6, "error": false}, {"time": "07:03 12:02", "articles": 0, "tweets": 0, "scheduled": 0, "duration": 0, "error": false}, {"time": "07:03 14:02", "articles": 0, "tweets": 0, "scheduled": 0, "duration": 0, "error": false}, {"time": "07:03 16:01", "articles": 100, "tweets": 5, "scheduled": 0, "duration": 0, "error": false}, {"time": "07:03 18:02", "articles": 100, "tweets": 5, "scheduled": 0, "duration": 88.2, "error": false}, {"time": "07:03 20:01", "articles": 100, "tweets": 5, "scheduled": 0, "duration": 88.0, "error": false}, {"time": "07:03 22:01", "articles": 100, "tweets": 5, "scheduled": 0, "duration": 107.9, "error": false}, {"time": "07:04 00:01", "articles": 100, "tweets": 5, "scheduled": 0, "duration": 94.9, "error": false}, {"time": "07:04 02:01", "articles": 100, "tweets": 5, "scheduled": 0, "duration": 90.0, "error": false}, {"time": "07:04 04:01", "articles": 100, "tweets": 5, "scheduled": 0, "duration": 96.7, "error": false}, {"time": "07:04 06:01", "articles": 100, "tweets": 5, "scheduled": 0, "duration": 100.9, "error": false}, {"time": "07:04 08:01", "articles": 100, "tweets": 5, "scheduled": 0, "duration": 90.3, "error": false}, {"time": "07:04 10:01", "articles": 100, "tweets": 4, "scheduled": 0, "duration": 96.4, "error": false}, {"time": "07:04 12:00", "articles": 100, "tweets": 0, "scheduled": 0, "duration": 0, "error": false}, {"time": "07:04 14:01", "articles": 100, "tweets": 5, "scheduled": 0, "duration": 105.2, "error": false}, {"time": "07:04 16:02", "articles": 100, "tweets": 5, "scheduled": 0, "duration": 110.4, "error": false}, {"time": "07:04 18:02", "articles": 100, "tweets": 5, "scheduled": 0, "duration": 106.2, "error": false}, {"time": "07:04 20:02", "articles": 100, "tweets": 5, "scheduled": 5, "duration": 101.9, "error": false}, {"time": "07:04 22:02", "articles": 100, "tweets": 5, "scheduled": 5, "duration": 100.2, "error": false}];
+(function() {
+  var labels = TIMELINE.map(function(t) { return (t.time||'').slice(0,5); });
+  new Chart(document.getElementById('timelineChart'), {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        {label:'Articles',data:TIMELINE.map(function(t){return t.articles}),borderColor:'#bc8cff',backgroundColor:'rgba(188,140,255,0.08)',tension:0.3,fill:true,pointRadius:1},
+        {label:'Tweets',data:TIMELINE.map(function(t){return t.scheduled||t.tweets}),borderColor:'#3fb950',tension:0.3,borderWidth:2,pointRadius:2},
+        {label:'Duration',data:TIMELINE.map(function(t){return t.duration}),borderColor:'#d2991d',borderDash:[4,2],tension:0.3,yAxisID:'y1',pointRadius:0}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,interaction:{intersect:false,mode:'index'},
+      plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:12,font:{size:10},color:'#8b949e'}}},
+      scales:{
+        y:{beginAtZero:true,grid:{color:'rgba(48,54,61,0.4)'},ticks:{font:{size:9},color:'#8b949e'}},
+        y1:{position:'right',beginAtZero:true,grid:{display:false},ticks:{font:{size:9},color:'#8b949e',callback:function(v){return v+'s'}}},
+        x:{ticks:{font:{size:9},color:'#8b949e',maxTicksLimit:12}}
+      }
     }
-  }
-});
-
-// Topic Distribution
-var topicColors = {'AI':'#58a6ff','Global Economy':'#3fb950','Finance':'#bc8cff','Company Analysis':'#d2991d','Professional Tools':'#f85149'};
-var topicData = T.by_topic || {};
-var maxCount = Math.max.apply(null, Object.values(topicData).map(function(v){return v.scheduled||0}).concat([1]));
-document.getElementById('topicBars').innerHTML = Object.entries(topicData).map(function(e) {
-  var topic=e[0], data=e[1], pct=Math.round((data.scheduled||0)/maxCount*100);
-  return '<div class="topic-bar"><span class="topic-name">'+topic+'</span><div class="topic-fill"><div class="topic-fill-inner" style="width:'+pct+'%;background:'+(topicColors[topic]||'#58a6ff')+'"></div></div><span class="topic-count">'+(data.scheduled||0)+'</span></div>';
-}).join('');
-var allZero = Object.values(topicData).every(function(v){return (v.scheduled||0)===0});
-document.getElementById('topicInsight').textContent = allZero ? 'No tweets scheduled yet for next cycle.' : Object.keys(topicData).length+' topics active · balanced distribution across 7 UTC time slots';
-
-// Spread Timeline
-var slots = T.scheduled_slots || [];
-var slotColors = Object.assign({}, topicColors, {'Unknown':'#8b949e'});
-document.getElementById('spreadTimeline').innerHTML = slots.length
-  ? slots.map(function(s) {
-      return '<div class="spread-bar"><span class="spread-hour">'+String(s.hour).padStart(2,'0')+':00</span><span class="spread-topic" style="background:'+(slotColors[s.topic]||'#30363d')+'22;color:'+(slotColors[s.topic]||'#c9d1d9')+'">'+s.topic+'</span><span style="font-size:0.65rem;color:var(--dim);margin-left:6px">'+s.time+'</span></div>';
-    }).join('')
-  : '<span style="color:var(--dim);font-size:0.73rem">No scheduled tweets for tomorrow</span>';
-
-// Architecture
-var arch = D.architecture || {};
-document.getElementById('archTable').querySelector('tbody').innerHTML = [
-  ['Pipeline',arch.pipeline],['Topics',arch.topics],['Sources',arch.sources],
-  ['Generation',arch.generation],['Scheduling',arch.scheduling],['Cron',arch.cron],
-  ['GitHub','<a href="https://github.com/'+arch.github+'" target="_blank" style="color:var(--blue)">'+arch.github+'</a>'],
-  ['Tracker','CSV-based: dedup, atomic writes, cap enforcement, spread scheduling']
-].map(function(p){return '<tr><td>'+p[0]+'</td><td>'+p[1]+'</td></tr>';}).join('');
-
-// Knowledge
-var se = D.search_engine || {};
-document.getElementById('knowledgeTable').querySelector('tbody').innerHTML = [
-  ['Obsidian Vault',se.vault_path||'–'],
-  ['Skills Indexed',(se.skills||0).toLocaleString()],
-  ['Clusters',se.clusters||'–'],
-  ['API Tensor','1,894 APIs · TF-IDF indexed'],
-  ['Tensor Status',((D.tensor||{}).status||'').slice(0,60)],
-  ['Content Engine','score → hook → tweet → polish → variety'],
-].map(function(p){return '<tr><td>'+p[0]+'</td><td>'+p[1]+'</td></tr>';}).join('');
-
-// Engagement preview
-var byTopic = T.by_topic || {};
-var engPreview = [];
-Object.entries(byTopic).forEach(function(e) {
-  var t=e[0], d=e[1];
-  if ((d.views||0)+(d.likes||0)+(d.retweets||0) > 0)
-    engPreview.push(t+': '+(d.views||0)+' views, '+(d.likes||0)+' likes');
-});
-document.getElementById('engagementPreview').textContent =
-  engPreview.length ? ' | So far: ' + engPreview.join(' · ') : '';
+  });
+})();
 </script>
 
 </body>
